@@ -137,6 +137,10 @@ const litFlowTickerSchema = z.object({
   max_volume: z.number().int().nonnegative().describe("The maximum volume on the contract").optional(),
 })
 
+const unusualTickersSchema = z.object({
+  action_type: z.literal("unusual_tickers"),
+})
+
 // Discriminated union of all action schemas
 const flowInputSchema = z.discriminatedUnion("action_type", [
   flowAlertsSchema,
@@ -146,6 +150,7 @@ const flowInputSchema = z.discriminatedUnion("action_type", [
   groupGreekFlowExpirySchema,
   litFlowRecentSchema,
   litFlowTickerSchema,
+  unusualTickersSchema,
 ])
 
 export const flowTool = {
@@ -160,6 +165,7 @@ Available actions:
 - group_greek_flow_expiry: Get greek flow by expiry for a flow group (flow_group, expiry required; date optional)
 - lit_flow_recent: Get recent lit exchange trades across the market
 - lit_flow_ticker: Get lit exchange trades for a specific ticker (ticker required)
+- unusual_tickers: Get tickers with unusual options activity
 
 Flow groups: airline, bank, basic materials, china, communication services, consumer cyclical, consumer defensive, crypto, cyber, energy, financial services, gas, gold, healthcare, industrials, mag7, oil, real estate, refiners, reit, semi, silver, technology, uranium, utilities
 
@@ -299,5 +305,9 @@ export const handleFlow = createToolHandler(flowInputSchema, {
       min_volume: data.min_volume,
       max_volume: data.max_volume,
     })
+  },
+
+  unusual_tickers: async () => {
+    return uwFetch("/api/option-trades/unusual-tickers")
   },
 })

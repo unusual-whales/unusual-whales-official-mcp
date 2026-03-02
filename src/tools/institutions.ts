@@ -29,6 +29,7 @@ const listSchema = z.object({
 const holdingsSchema = z.object({
   action_type: z.literal("holdings"),
   name: z.string().describe("Institution name"),
+  ticker_symbol: z.string().describe("Filter holdings by ticker symbol").optional(),
   date: dateSchema.optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
@@ -80,11 +81,24 @@ const latestFilingsSchema = z.object({
   order_direction: orderDirectionSchema.default("desc").optional(),
 })
 
+const activityV2Schema = z.object({
+  action_type: z.literal("activity_v2"),
+  name: z.string().describe("Institution name"),
+  date: dateSchema.optional(),
+  start_date: z.string().optional(),
+  end_date: z.string().optional(),
+  limit: limitSchema.default(500).optional(),
+  page: z.number().optional(),
+  order: institutionalActivityOrderBySchema.optional(),
+  order_direction: orderDirectionSchema.default("desc").optional(),
+})
+
 // Discriminated union of all action schemas
 const institutionsInputSchema = z.discriminatedUnion("action_type", [
   listSchema,
   holdingsSchema,
   activitySchema,
+  activityV2Schema,
   sectorsSchema,
   ownershipSchema,
   latestFilingsSchema,
@@ -98,6 +112,7 @@ Available actions:
 - list: List institutions with filters
 - holdings: Get holdings for an institution (name required)
 - activity: Get trading activity for an institution (name required)
+- activity_v2: Get trading activity v2 with enhanced data for an institution (name required; date, start_date, end_date optional)
 - sectors: Get sector exposure for an institution (name required)
 - ownership: Get institutional ownership of a ticker (ticker required)
 - latest_filings: Get latest institutional filings`,
@@ -134,6 +149,7 @@ export const handleInstitutions = createToolHandler(institutionsInputSchema, {
       .add("name", data.name)
       .build("/api/institution/{name}/holdings")
     return uwFetch(path, {
+      ticker_symbol: data.ticker_symbol,
       date: data.date,
       start_date: data.start_date,
       end_date: data.end_date,
@@ -151,6 +167,21 @@ export const handleInstitutions = createToolHandler(institutionsInputSchema, {
       .build("/api/institution/{name}/activity")
     return uwFetch(path, {
       date: data.date,
+      limit: data.limit,
+      page: data.page,
+      order: data.order,
+      order_direction: data.order_direction,
+    })
+  },
+
+  activity_v2: async (data) => {
+    const path = new PathParamBuilder()
+      .add("name", data.name)
+      .build("/api/institution/{name}/activity/v2")
+    return uwFetch(path, {
+      date: data.date,
+      start_date: data.start_date,
+      end_date: data.end_date,
       limit: data.limit,
       page: data.page,
       order: data.order,

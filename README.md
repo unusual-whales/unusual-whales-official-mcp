@@ -119,23 +119,56 @@ Sign up at [Unusual Whales](https://unusualwhales.com) and get your API key.
 
 ### 2. Install
 
+Choose either **Remote** (easiest, no install) or **Local** (runs on your machine):
+
+#### Option A: Remote Server (Recommended)
+
+Connect directly to the Unusual Whales hosted MCP endpoint. No npm install needed.
+
 **Claude Code:**
 ```bash
-claude mcp add unusualwhales -e UW_API_KEY=your_api_key -- npx -y @erikmaday/unusual-whales-mcp
+claude mcp add unusualwhales --transport http https://api.unusualwhales.com/api/mcp -H "Authorization: Bearer your_api_key"
 ```
 
-**Claude Desktop:**
+**Claude Desktop / Cursor / VS Code / Windsurf:**
 
-Add to your config file:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+Add to your MCP config file:
+- **Claude Desktop (macOS)**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Claude Desktop (Windows)**: `%APPDATA%\Claude\claude_desktop_config.json`
+- **Cursor**: `.cursor/mcp.json` in your project or `~/.cursor/mcp.json`
+- **VS Code**: `.vscode/mcp.json` in your project
+- **Windsurf**: `~/.codeium/windsurf/mcp_config.json`
+
+```json
+{
+  "mcpServers": {
+    "unusualwhales": {
+      "url": "https://api.unusualwhales.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer your_api_key"
+      }
+    }
+  }
+}
+```
+
+#### Option B: Local Server
+
+Run the MCP server locally on your machine. Requires Node.js 20+.
+
+**Claude Code:**
+```bash
+claude mcp add unusualwhales -e UW_API_KEY=your_api_key -- npx -y @unusualwhales/mcp
+```
+
+**Claude Desktop / Cursor / VS Code / Windsurf:**
 
 ```json
 {
   "mcpServers": {
     "unusualwhales": {
       "command": "npx",
-      "args": ["-y", "@erikmaday/unusual-whales-mcp"],
+      "args": ["-y", "@unusualwhales/mcp"],
       "env": {
         "UW_API_KEY": "your_api_key"
       }

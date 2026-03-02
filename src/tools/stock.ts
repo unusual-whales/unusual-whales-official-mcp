@@ -321,6 +321,17 @@ const tickersBySectorSchema = z.object({
   sector: sectorEnum,
 })
 
+const flowAlertsTickerSchema = z.object({
+  action_type: z.literal("flow_alerts"),
+  ticker: tickerSchema,
+  limit: limitSchema.optional(),
+})
+
+const fundamentalBreakdownSchema = z.object({
+  action_type: z.literal("fundamental_breakdown"),
+  ticker: tickerSchema,
+})
+
 const tickerExchangesSchema = z.object({
   action_type: z.literal("ticker_exchanges"),
 })
@@ -369,6 +380,8 @@ const stockInputSchema = z.discriminatedUnion("action_type", [
   ownershipSchema,
   tickersBySectorSchema,
   tickerExchangesSchema,
+  flowAlertsTickerSchema,
+  fundamentalBreakdownSchema,
 ])
 
 export const stockTool = {
@@ -417,7 +430,9 @@ Available actions:
 - insider_buy_sells: Get insider buy/sells for stock (ticker required; limit optional)
 - ownership: Get ownership data (ticker required; limit optional)
 - tickers_by_sector: Get tickers in sector (sector required)
-- ticker_exchanges: Get mapping of all tickers to their exchanges (no params required)`,
+- ticker_exchanges: Get mapping of all tickers to their exchanges (no params required)
+- flow_alerts: Get flow alerts for a specific ticker (ticker required; limit optional)
+- fundamental_breakdown: Get fundamental financial data including EPS, revenue, dividends, share counts, and revenue breakdowns (ticker required)`,
   inputSchema: toJsonSchema(stockInputSchema),
   zodInputSchema: stockInputSchema,
   annotations: {
@@ -793,5 +808,19 @@ export const handleStock = createToolHandler(stockInputSchema, {
 
   ticker_exchanges: async () => {
     return uwFetch("/api/stock-directory/ticker-exchanges")
+  },
+
+  flow_alerts: async (data) => {
+    const path = new PathParamBuilder()
+      .add("ticker", data.ticker)
+      .build("/api/stock/{ticker}/flow-alerts")
+    return uwFetch(path, { limit: data.limit })
+  },
+
+  fundamental_breakdown: async (data) => {
+    const path = new PathParamBuilder()
+      .add("ticker", data.ticker)
+      .build("/api/stock/{ticker}/fundamental-breakdown")
+    return uwFetch(path)
   },
 })

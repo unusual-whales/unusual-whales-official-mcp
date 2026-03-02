@@ -8,7 +8,7 @@ Thanks for your interest in contributing!
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/erikmaday/unusual-whales-mcp.git
+git clone https://github.com/unusual-whales/unusual-whales-mcp.git
 cd unusual-whales-mcp
 npm install
 
@@ -679,5 +679,5 @@ When reporting bugs or requesting features:
 ## Getting Help
 
 - **Documentation**: See `docs/ARCHITECTURE.md` and `docs/TROUBLESHOOTING.md`
-- **Issues**: https://github.com/erikmaday/unusual-whales-mcp/issues
+- **Issues**: https://github.com/unusual-whales/unusual-whales-mcp/issues
 - **Discussions**: For questions and ideas

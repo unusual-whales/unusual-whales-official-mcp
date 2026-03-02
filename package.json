@@ -1,7 +1,7 @@
 {
-  "name": "@erikmaday/unusual-whales-mcp",
-  "version": "0.3.0",
-  "description": "MCP server for UnusualWhales API - access options flow, dark pool, congress trades, and more",
+  "name": "@unusualwhales/mcp",
+  "version": "1.0.0",
+  "description": "Official Unusual Whales MCP server - access 100+ endpoints for options flow, dark pool, congress trades, Greek exposure, volatility, and more",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -19,14 +19,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/erikmaday/unusual-whales-mcp.git"
+    "url": "git+https://github.com/unusual-whales/unusual-whales-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/erikmaday/unusual-whales-mcp/issues"
+    "url": "https://github.com/unusual-whales/unusual-whales-mcp/issues"
   },
-  "homepage": "https://github.com/erikmaday/unusual-whales-mcp#readme",
+  "homepage": "https://github.com/unusual-whales/unusual-whales-mcp#readme",
   "license": "MIT",
-  "author": "Erik Maday",
+  "author": "Unusual Whales",
   "keywords": [
     "mcp",
     "unusual-whales",

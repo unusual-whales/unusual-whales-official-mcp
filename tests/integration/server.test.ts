@@ -37,8 +37,8 @@ vi.mock("../../src/client.js", () => ({
 import { uwFetch } from "../../src/client.js"
 
 describe("Tool Registry", () => {
-  it("exports all 16 tools", () => {
-    expect(tools).toHaveLength(16)
+  it("exports all 17 tools", () => {
+    expect(tools).toHaveLength(17)
   })
 
   it("all tools have required properties", () => {
