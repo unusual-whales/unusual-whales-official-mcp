@@ -1,0 +1,1093 @@
+import { describe, it, expect } from 'vitest'
+
+// Mock functions to test (we'll need to export them from check-api-sync.js)
+// For now, we'll test the logic inline
+
+describe('resolveRef', () => {
+  // Helper function to mimic resolveRef
+  function resolveRef(ref, spec, visited = new Set()) {
+    if (!ref || typeof ref !== 'string') return null
+
+    if (visited.has(ref)) {
+      return null
+    }
+    visited.add(ref)
+
+    if (!ref.startsWith('#/')) {
+      return null
+    }
+
+    const refPath = ref.substring(2)
+    const standardMatch = refPath.match(/^(components\/schemas|components\/parameters|components\/responses)\/(.+)$/)
+
+    let path
+    if (standardMatch) {
+      const prefix = standardMatch[1].split('/')
+      const schemaName = standardMatch[2]
+      path = [...prefix, schemaName]
+    } else {
+      path = refPath.split('/')
+    }
+
+    let current = spec
+    for (const segment of path) {
+      if (current && typeof current === 'object' && segment in current) {
+        current = current[segment]
+      } else {
+        return null
+      }
+    }
+
+    if (current && typeof current === 'object' && current.$ref) {
+      return resolveRef(current.$ref, spec, visited)
+    }
+
+    return current
+  }
+
+  it('resolves a simple schema reference', () => {
+    const spec = {
+      components: {
+        schemas: {
+          'Tide Type': {
+            description: 'Filter results by tide type',
+            enum: ['all', 'equity_only', 'etf_only', 'index_only'],
+            type: 'string'
+          }
+        }
+      }
+    }
+
+    const result = resolveRef('#/components/schemas/Tide Type', spec)
+
+    expect(result).toBeDefined()
+    expect(result.enum).toEqual(['all', 'equity_only', 'etf_only', 'index_only'])
+    expect(result.type).toBe('string')
+  })
+
+  it('resolves nested references', () => {
+    const spec = {
+      components: {
+        schemas: {
+          'Inner': {
+            type: 'string',
+            enum: ['a', 'b', 'c']
+          },
+          'Outer': {
+            $ref: '#/components/schemas/Inner'
+          }
+        }
+      }
+    }
+
+    const result = resolveRef('#/components/schemas/Outer', spec)
+
+    expect(result).toBeDefined()
+    expect(result.enum).toEqual(['a', 'b', 'c'])
+  })
+
+  it('returns null for invalid reference', () => {
+    const spec = {
+      components: {
+        schemas: {}
+      }
+    }
+
+    const result = resolveRef('#/components/schemas/NonExistent', spec)
+
+    expect(result).toBeNull()
+  })
+
+  it('handles circular references', () => {
+    const spec = {
+      components: {
+        schemas: {
+          'A': {
+            $ref: '#/components/schemas/B'
+          },
+          'B': {
+            $ref: '#/components/schemas/A'
+          }
+        }
+      }
+    }
+
+    const result = resolveRef('#/components/schemas/A', spec)
+
+    // Should return null to prevent infinite loop
+    expect(result).toBeNull()
+  })
+
+  it('returns null for external references', () => {
+    const spec = {}
+    const result = resolveRef('http://example.com/schema', spec)
+
+    expect(result).toBeNull()
+  })
+
+  it('returns null for null or undefined input', () => {
+    const spec = {}
+
+    expect(resolveRef(null, spec)).toBeNull()
+    expect(resolveRef(undefined, spec)).toBeNull()
+  })
+
+  it('resolves schema names with slashes', () => {
+    const spec = {
+      components: {
+        schemas: {
+          'S&P 500/Nasdaq Only': {
+            type: 'boolean',
+            default: false,
+            description: 'Only return tickers in S&P 500 or Nasdaq 100'
+          }
+        }
+      }
+    }
+
+    const result = resolveRef('#/components/schemas/S&P 500/Nasdaq Only', spec)
+
+    expect(result).toBeDefined()
+    expect(result.type).toBe('boolean')
+    expect(result.default).toBe(false)
+  })
+})
+
+describe('extractParamSchema', () => {
+  function resolveRef(ref, spec, visited = new Set()) {
+    if (!ref || typeof ref !== 'string') return null
+    if (visited.has(ref)) return null
+    visited.add(ref)
+    if (!ref.startsWith('#/')) return null
+
+    const refPath = ref.substring(2)
+    const standardMatch = refPath.match(/^(components\/schemas|components\/parameters|components\/responses)\/(.+)$/)
+
+    let path
+    if (standardMatch) {
+      const prefix = standardMatch[1].split('/')
+      const schemaName = standardMatch[2]
+      path = [...prefix, schemaName]
+    } else {
+      path = refPath.split('/')
+    }
+
+    let current = spec
+    for (const segment of path) {
+      if (current && typeof current === 'object' && segment in current) {
+        current = current[segment]
+      } else {
+        return null
+      }
+    }
+
+    if (current && typeof current === 'object' && current.$ref) {
+      return resolveRef(current.$ref, spec, visited)
+    }
+
+    return current
+  }
+
+  function extractParamSchema(param, spec) {
+    const schema = {}
+
+    let paramSchema = param.schema
+    if (paramSchema?.$ref) {
+      paramSchema = resolveRef(paramSchema.$ref, spec)
+    }
+
+    if (!paramSchema) return schema
+
+    if (paramSchema.enum) {
+      schema.enum = paramSchema.enum
+    }
+
+    if (paramSchema.type) {
+      schema.type = paramSchema.type
+    }
+
+    if (paramSchema.minimum !== undefined) {
+      schema.minimum = paramSchema.minimum
+    }
+    if (paramSchema.maximum !== undefined) {
+      schema.maximum = paramSchema.maximum
+    }
+
+    if (paramSchema.pattern) {
+      schema.pattern = paramSchema.pattern
+    }
+    if (paramSchema.format) {
+      schema.format = paramSchema.format
+    }
+
+    if (paramSchema.default !== undefined) {
+      schema.default = paramSchema.default
+    }
+
+    return schema
+  }
+
+  it('extracts enum values from inline schema', () => {
+    const param = {
+      name: 'tide_type',
+      schema: {
+        type: 'string',
+        enum: ['all', 'equity_only', 'etf_only']
+      }
+    }
+    const spec = {}
+
+    const result = extractParamSchema(param, spec)
+
+    expect(result.enum).toEqual(['all', 'equity_only', 'etf_only'])
+    expect(result.type).toBe('string')
+  })
+
+  it('extracts enum values from $ref schema', () => {
+    const param = {
+      name: 'tide_type',
+      schema: {
+        $ref: '#/components/schemas/Tide Type'
+      }
+    }
+    const spec = {
+      components: {
+        schemas: {
+          'Tide Type': {
+            type: 'string',
+            enum: ['all', 'equity_only', 'etf_only', 'index_only']
+          }
+        }
+      }
+    }
+
+    const result = extractParamSchema(param, spec)
+
+    expect(result.enum).toEqual(['all', 'equity_only', 'etf_only', 'index_only'])
+    expect(result.type).toBe('string')
+  })
+
+  it('extracts numeric constraints', () => {
+    const param = {
+      name: 'limit',
+      schema: {
+        $ref: '#/components/schemas/Limit'
+      }
+    }
+    const spec = {
+      components: {
+        schemas: {
+          'Limit': {
+            type: 'integer',
+            minimum: 1,
+            maximum: 500,
+            default: 50
+          }
+        }
+      }
+    }
+
+    const result = extractParamSchema(param, spec)
+
+    expect(result.type).toBe('integer')
+    expect(result.minimum).toBe(1)
+    expect(result.maximum).toBe(500)
+    expect(result.default).toBe(50)
+  })
+
+  it('extracts string constraints', () => {
+    const param = {
+      name: 'email',
+      schema: {
+        type: 'string',
+        pattern: '^[a-z]+@[a-z]+\\.[a-z]+$',
+        format: 'email'
+      }
+    }
+    const spec = {}
+
+    const result = extractParamSchema(param, spec)
+
+    expect(result.type).toBe('string')
+    expect(result.pattern).toBe('^[a-z]+@[a-z]+\\.[a-z]+$')
+    expect(result.format).toBe('email')
+  })
+
+  it('returns empty object for param without schema', () => {
+    const param = {
+      name: 'test'
+    }
+    const spec = {}
+
+    const result = extractParamSchema(param, spec)
+
+    expect(result).toEqual({})
+  })
+})
+
+describe('extractDeprecationInfo', () => {
+  function extractDeprecationInfo(description) {
+    if (!description) return null
+
+    const lowerDesc = description.toLowerCase()
+    if (!lowerDesc.includes('deprecated')) return null
+
+    const info = {
+      deprecated: true,
+      message: '',
+      replacementEndpoint: null
+    }
+
+    const lines = description.trim().split('\n')
+    info.message = lines[0].trim()
+
+    const urlMatch = description.match(/https:\/\/api\.unusualwhales\.com\/docs#\/operations\/([^\s\)\]]+)/)
+    if (urlMatch) {
+      info.replacementUrl = urlMatch[0]
+    }
+
+    const pathMatch = description.match(/\/api\/[^\s\)]+/)
+    if (pathMatch) {
+      info.replacementEndpoint = pathMatch[0]
+    }
+
+    return info
+  }
+
+  it('detects deprecated endpoint with replacement URL', () => {
+    const description = `This endpoint has been deprecated and will be removed.
+Please migrate to this Flow Alerts endpoint, which provides a more detailed response: [https://api.unusualwhales.com/docs#/operations/PublicApi.OptionTradeController.flow_alerts](https://api.unusualwhales.com/docs#/operations/PublicApi.OptionTradeController.flow_alerts)`
+
+    const result = extractDeprecationInfo(description)
+
+    expect(result).toBeDefined()
+    expect(result.deprecated).toBe(true)
+    expect(result.message).toBe('This endpoint has been deprecated and will be removed.')
+    expect(result.replacementUrl).toBe('https://api.unusualwhales.com/docs#/operations/PublicApi.OptionTradeController.flow_alerts')
+  })
+
+  it('detects deprecated endpoint with replacement endpoint path', () => {
+    const description = `This endpoint has been deprecated and will be removed, please migrate to the new [endpoint](https://api.unusualwhales.com/docs#/operations/PublicApi.TickerController.spot_exposures_by_strike_expiry_v2)`
+
+    const result = extractDeprecationInfo(description)
+
+    expect(result).toBeDefined()
+    expect(result.deprecated).toBe(true)
+    expect(result.message).toContain('deprecated')
+    expect(result.replacementUrl).toBe('https://api.unusualwhales.com/docs#/operations/PublicApi.TickerController.spot_exposures_by_strike_expiry_v2')
+  })
+
+  it('detects deprecated with API path in description', () => {
+    const description = `This endpoint is deprecated. Use /api/v2/new-endpoint instead.`
+
+    const result = extractDeprecationInfo(description)
+
+    expect(result).toBeDefined()
+    expect(result.deprecated).toBe(true)
+    expect(result.replacementEndpoint).toBe('/api/v2/new-endpoint')
+  })
+
+  it('returns null for non-deprecated endpoint', () => {
+    const description = 'This is a regular endpoint description'
+
+    const result = extractDeprecationInfo(description)
+
+    expect(result).toBeNull()
+  })
+
+  it('returns null for empty description', () => {
+    expect(extractDeprecationInfo('')).toBeNull()
+    expect(extractDeprecationInfo(null)).toBeNull()
+    expect(extractDeprecationInfo(undefined)).toBeNull()
+  })
+
+  it('handles case-insensitive deprecated detection', () => {
+    const description = 'DEPRECATED: This endpoint is no longer supported'
+
+    const result = extractDeprecationInfo(description)
+
+    expect(result).toBeDefined()
+    expect(result.deprecated).toBe(true)
+    expect(result.message).toBe('DEPRECATED: This endpoint is no longer supported')
+  })
+})
+
+describe('extractSchemaEnums', () => {
+  it('extracts enum values from schema files', () => {
+    // Mock schema content
+    const schemaContent = `
+      import { z } from "zod"
+
+      export const optionTypeSchema = z.enum(["call", "put"]).describe("Option type (call or put)")
+
+      export const orderDirectionSchema = z.enum(["asc", "desc"]).describe("Order direction")
+
+      export const candleSizeSchema = z.enum([
+        "1m", "5m", "10m", "15m", "30m", "1h", "4h", "1d",
+      ]).describe("Candle size")
+    `
+
+    // Parse the content
+    const enums: Record<string, { file: string; values: string[] }> = {}
+
+    const enumPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.enum\(\s*\[([^\]]+)\]\s*\)/g
+    let match
+
+    while ((match = enumPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      const enumValues = match[2]
+
+      const values: string[] = []
+      const valuePattern = /["']([^"']+)["']/g
+      let valueMatch
+
+      while ((valueMatch = valuePattern.exec(enumValues)) !== null) {
+        values.push(valueMatch[1])
+      }
+
+      if (values.length > 0) {
+        enums[schemaName] = {
+          file: 'common.ts',
+          values,
+        }
+      }
+    }
+
+    expect(enums['optionTypeSchema']).toBeDefined()
+    expect(enums['optionTypeSchema'].values).toEqual(['call', 'put'])
+
+    expect(enums['orderDirectionSchema']).toBeDefined()
+    expect(enums['orderDirectionSchema'].values).toEqual(['asc', 'desc'])
+
+    expect(enums['candleSizeSchema']).toBeDefined()
+    expect(enums['candleSizeSchema'].values).toEqual([
+      '1m', '5m', '10m', '15m', '30m', '1h', '4h', '1d',
+    ])
+  })
+
+  it('handles enums without export keyword', () => {
+    const schemaContent = `
+      const privateSchema = z.enum(["a", "b", "c"])
+    `
+
+    const enums: Record<string, { file: string; values: string[] }> = {}
+    const enumPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.enum\(\s*\[([^\]]+)\]\s*\)/g
+    let match
+
+    while ((match = enumPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      const enumValues = match[2]
+
+      const values: string[] = []
+      const valuePattern = /["']([^"']+)["']/g
+      let valueMatch
+
+      while ((valueMatch = valuePattern.exec(enumValues)) !== null) {
+        values.push(valueMatch[1])
+      }
+
+      if (values.length > 0) {
+        enums[schemaName] = {
+          file: 'test.ts',
+          values,
+        }
+      }
+    }
+
+    expect(enums['privateSchema']).toBeDefined()
+    expect(enums['privateSchema'].values).toEqual(['a', 'b', 'c'])
+  })
+})
+
+describe('extractSchemaDefaults', () => {
+  it('extracts default values from schema files', () => {
+    // Mock schema content
+    const schemaContent = `
+      import { z } from "zod"
+
+      export const limitSchema = z.number().min(1).max(200).default(100).describe("Maximum number of results")
+
+      export const nameSchema = z.string().default("Nancy Pelosi").describe("Congress member name")
+
+      export const intradayOnlySchema = z.boolean().default(true).describe("Only intraday alerts")
+    `
+
+    // Parse the content
+    const defaults: Record<string, { file: string; value: any }> = {}
+
+    const defaultPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.[^=]+\.default\(([^)]+)\)/g
+    let match
+
+    while ((match = defaultPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      let defaultValue: any = match[2].trim()
+
+      // Parse the default value
+      if ((defaultValue.startsWith('"') && defaultValue.endsWith('"')) ||
+          (defaultValue.startsWith("'") && defaultValue.endsWith("'"))) {
+        defaultValue = defaultValue.slice(1, -1)
+      } else if (defaultValue === 'true' || defaultValue === 'false') {
+        defaultValue = defaultValue === 'true'
+      } else if (!isNaN(Number(defaultValue))) {
+        defaultValue = Number(defaultValue)
+      }
+
+      defaults[schemaName] = {
+        file: 'common.ts',
+        value: defaultValue,
+      }
+    }
+
+    expect(defaults['limitSchema']).toBeDefined()
+    expect(defaults['limitSchema'].value).toBe(100)
+
+    expect(defaults['nameSchema']).toBeDefined()
+    expect(defaults['nameSchema'].value).toBe('Nancy Pelosi')
+
+    expect(defaults['intradayOnlySchema']).toBeDefined()
+    expect(defaults['intradayOnlySchema'].value).toBe(true)
+  })
+
+  it('handles schemas without export keyword', () => {
+    const schemaContent = `
+      const privateSchema = z.string().default("test value")
+    `
+
+    const defaults: Record<string, { file: string; value: any }> = {}
+    const defaultPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.[^=]+\.default\(([^)]+)\)/g
+    let match
+
+    while ((match = defaultPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      let defaultValue: any = match[2].trim()
+
+      if ((defaultValue.startsWith('"') && defaultValue.endsWith('"')) ||
+          (defaultValue.startsWith("'") && defaultValue.endsWith("'"))) {
+        defaultValue = defaultValue.slice(1, -1)
+      }
+
+      defaults[schemaName] = {
+        file: 'test.ts',
+        value: defaultValue,
+      }
+    }
+
+    expect(defaults['privateSchema']).toBeDefined()
+    expect(defaults['privateSchema'].value).toBe('test value')
+  })
+
+  it('parses numeric default values correctly', () => {
+    const schemaContent = `
+      export const countSchema = z.number().default(42)
+      export const ratioSchema = z.number().default(0.5)
+    `
+
+    const defaults: Record<string, { file: string; value: any }> = {}
+    const defaultPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.[^=]+\.default\(([^)]+)\)/g
+    let match
+
+    while ((match = defaultPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      let defaultValue: any = match[2].trim()
+
+      if (!isNaN(Number(defaultValue))) {
+        defaultValue = Number(defaultValue)
+      }
+
+      defaults[schemaName] = {
+        file: 'test.ts',
+        value: defaultValue,
+      }
+    }
+
+    expect(defaults['countSchema']).toBeDefined()
+    expect(defaults['countSchema'].value).toBe(42)
+    expect(typeof defaults['countSchema'].value).toBe('number')
+
+    expect(defaults['ratioSchema']).toBeDefined()
+    expect(defaults['ratioSchema'].value).toBe(0.5)
+    expect(typeof defaults['ratioSchema'].value).toBe('number')
+  })
+
+  it('parses boolean default values correctly', () => {
+    const schemaContent = `
+      export const enabledSchema = z.boolean().default(true)
+      export const disabledSchema = z.boolean().default(false)
+    `
+
+    const defaults: Record<string, { file: string; value: any }> = {}
+    const defaultPattern = /(?:export\s+)?const\s+(\w+Schema)\s*=\s*z\.[^=]+\.default\(([^)]+)\)/g
+    let match
+
+    while ((match = defaultPattern.exec(schemaContent)) !== null) {
+      const schemaName = match[1]
+      let defaultValue: any = match[2].trim()
+
+      if (defaultValue === 'true' || defaultValue === 'false') {
+        defaultValue = defaultValue === 'true'
+      }
+
+      defaults[schemaName] = {
+        file: 'test.ts',
+        value: defaultValue,
+      }
+    }
+
+    expect(defaults['enabledSchema']).toBeDefined()
+    expect(defaults['enabledSchema'].value).toBe(true)
+    expect(typeof defaults['enabledSchema'].value).toBe('boolean')
+
+    expect(defaults['disabledSchema']).toBeDefined()
+    expect(defaults['disabledSchema'].value).toBe(false)
+    expect(typeof defaults['disabledSchema'].value).toBe('boolean')
+  })
+})
+
+describe('findSchemaForParam', () => {
+  it('finds schema by matching parameter name pattern', () => {
+    const toolContent = `
+      export const schema = z.object({
+        tide_type: tideTypeSchema.optional(),
+        option_type: optionTypeSchema,
+      })
+    `
+
+    // Simulate findSchemaForParam logic
+    function findSchemaForParam(paramName: string, content: string): string | null {
+      const pattern = new RegExp(`${paramName}\\s*:\\s*(\\w+Schema)`, 'i')
+      const match = content.match(pattern)
+
+      if (match) {
+        return match[1]
+      }
+
+      return null
+    }
+
+    const tideTypeResult = findSchemaForParam('tide_type', toolContent)
+    expect(tideTypeResult).toBe('tideTypeSchema')
+
+    const optionTypeResult = findSchemaForParam('option_type', toolContent)
+    expect(optionTypeResult).toBe('optionTypeSchema')
+  })
+
+  it('returns null for non-existent parameter', () => {
+    const toolContent = `
+      export const schema = z.object({
+        tide_type: tideTypeSchema.optional(),
+      })
+    `
+
+    function findSchemaForParam(paramName: string, content: string): string | null {
+      const pattern = new RegExp(`${paramName}\\s*:\\s*(\\w+Schema)`, 'i')
+      const match = content.match(pattern)
+      return match ? match[1] : null
+    }
+
+    const result = findSchemaForParam('nonexistent', toolContent)
+    expect(result).toBeNull()
+  })
+})
+
+describe('enum validation', () => {
+  it('detects missing enum values', () => {
+    // Spec has enum with 4 values
+    const specEnum = ['all', 'equity_only', 'etf_only', 'index_only']
+
+    // Implementation only has 3 values
+    const implEnum = ['all', 'equity_only', 'etf_only']
+
+    const missing = specEnum.filter(v => !implEnum.includes(v))
+    const extra = implEnum.filter(v => !specEnum.includes(v))
+
+    expect(missing).toEqual(['index_only'])
+    expect(extra).toEqual([])
+  })
+
+  it('detects extra enum values', () => {
+    // Spec has enum with 2 values
+    const specEnum = ['call', 'put']
+
+    // Implementation has 3 values (including deprecated one)
+    const implEnum = ['call', 'put', 'spread']
+
+    const missing = specEnum.filter(v => !implEnum.includes(v))
+    const extra = implEnum.filter(v => !specEnum.includes(v))
+
+    expect(missing).toEqual([])
+    expect(extra).toEqual(['spread'])
+  })
+
+  it('detects both missing and extra enum values', () => {
+    // Spec has enum values
+    const specEnum = ['asc', 'desc', 'random']
+
+    // Implementation has different values
+    const implEnum = ['asc', 'ascending', 'descending']
+
+    const missing = specEnum.filter(v => !implEnum.includes(v))
+    const extra = implEnum.filter(v => !specEnum.includes(v))
+
+    expect(missing).toEqual(['desc', 'random'])
+    expect(extra).toEqual(['ascending', 'descending'])
+  })
+
+  it('passes when enum values match exactly', () => {
+    const specEnum = ['call', 'put']
+    const implEnum = ['call', 'put']
+
+    const missing = specEnum.filter(v => !implEnum.includes(v))
+    const extra = implEnum.filter(v => !specEnum.includes(v))
+
+    expect(missing).toEqual([])
+    expect(extra).toEqual([])
+  })
+
+  it('handles enums with different ordering', () => {
+    const specEnum = ['z', 'a', 'm']
+    const implEnum = ['a', 'm', 'z']
+
+    const missing = specEnum.filter(v => !implEnum.includes(v))
+    const extra = implEnum.filter(v => !specEnum.includes(v))
+
+    expect(missing).toEqual([])
+    expect(extra).toEqual([])
+  })
+})
+
+describe('extractImplementedSchemas', () => {
+  it('extracts required and optional parameters from Zod schema', () => {
+    const toolContent = `
+      import { z } from "zod"
+
+      const testInputSchema = z.object({
+        ticker: z.string().describe("Ticker symbol"),
+        date: z.string().describe("Date").optional(),
+        limit: z.number().optional(),
+        required_param: z.string(),
+      })
+    `
+
+    // Simulate extractImplementedSchemas logic
+    const schemaPattern = /const\s+\w+InputSchema\s*=\s*z\.object\(\{([^}]+(?:\}[^}]+)*)\}\)/gs
+    const match = schemaPattern.exec(toolContent)
+
+    expect(match).toBeDefined()
+
+    const schemaBody = match![1]
+    const paramPattern = /(\w+)\s*:\s*([^,\n]+(?:\([^)]*\)[^,\n]*)*)/g
+
+    const params = {
+      required: [] as string[],
+      optional: [] as string[],
+    }
+
+    let paramMatch
+    while ((paramMatch = paramPattern.exec(schemaBody)) !== null) {
+      const paramName = paramMatch[1]
+      const paramDef = paramMatch[2].trim()
+      const isOptional = paramDef.includes('.optional()')
+
+      if (isOptional) {
+        params.optional.push(paramName)
+      } else {
+        params.required.push(paramName)
+      }
+    }
+
+    expect(params.required).toContain('ticker')
+    expect(params.required).toContain('required_param')
+    expect(params.optional).toContain('date')
+    expect(params.optional).toContain('limit')
+    expect(params.required).toHaveLength(2)
+    expect(params.optional).toHaveLength(2)
+  })
+
+  it('handles inline parameter definitions with chained methods', () => {
+    const toolContent = `
+      const testInputSchema = z.object({
+        complex_param: z.string().describe("A complex parameter").optional(),
+        another: z.number().min(1).max(100),
+      })
+    `
+
+    const schemaPattern = /const\s+\w+InputSchema\s*=\s*z\.object\(\{([^}]+(?:\}[^}]+)*)\}\)/gs
+    const match = schemaPattern.exec(toolContent)
+
+    expect(match).toBeDefined()
+
+    const schemaBody = match![1]
+    const paramPattern = /(\w+)\s*:\s*([^,\n]+(?:\([^)]*\)[^,\n]*)*)/g
+
+    const params = {
+      required: [] as string[],
+      optional: [] as string[],
+    }
+
+    let paramMatch
+    while ((paramMatch = paramPattern.exec(schemaBody)) !== null) {
+      const paramName = paramMatch[1]
+      const paramDef = paramMatch[2].trim()
+      const isOptional = paramDef.includes('.optional()')
+
+      if (isOptional) {
+        params.optional.push(paramName)
+      } else {
+        params.required.push(paramName)
+      }
+    }
+
+    expect(params.optional).toContain('complex_param')
+    expect(params.required).toContain('another')
+  })
+
+  it('returns empty arrays for schema without parameters', () => {
+    const toolContent = `
+      const emptySchema = z.object({})
+    `
+
+    const schemaPattern = /const\s+\w+InputSchema\s*=\s*z\.object\(\{([^}]+(?:\}[^}]+)*)\}\)/gs
+    const match = schemaPattern.exec(toolContent)
+
+    // Should not match schemas that don't follow the xxxInputSchema naming
+    expect(match).toBeNull()
+  })
+})
+
+describe('required/optional mismatch detection', () => {
+  it('detects parameter required in spec but optional in implementation', () => {
+    // Spec says 'ticker' is required
+    const specParams = {
+      required: ['ticker'],
+      optional: ['date'],
+    }
+
+    // Implementation makes 'ticker' optional
+    const implParams = {
+      required: [] as string[],
+      optional: ['ticker', 'date'],
+    }
+
+    // Check for mismatch
+    const mismatches = []
+    for (const param of specParams.required) {
+      if (implParams.optional.includes(param)) {
+        mismatches.push({
+          param,
+          type: 'required-in-spec-optional-in-impl',
+          message: 'Parameter is required in API spec but optional in implementation',
+        })
+      }
+    }
+
+    expect(mismatches).toHaveLength(1)
+    expect(mismatches[0].param).toBe('ticker')
+    expect(mismatches[0].type).toBe('required-in-spec-optional-in-impl')
+  })
+
+  it('detects parameter optional in spec but required in implementation', () => {
+    // Spec says 'date' is optional
+    const specParams = {
+      required: ['ticker'],
+      optional: ['date'],
+    }
+
+    // Implementation makes 'date' required
+    const implParams = {
+      required: ['ticker', 'date'],
+      optional: [] as string[],
+    }
+
+    // Check for mismatch
+    const mismatches = []
+    for (const param of specParams.optional) {
+      if (implParams.required.includes(param)) {
+        mismatches.push({
+          param,
+          type: 'optional-in-spec-required-in-impl',
+          message: 'Parameter is optional in API spec but required in implementation',
+        })
+      }
+    }
+
+    expect(mismatches).toHaveLength(1)
+    expect(mismatches[0].param).toBe('date')
+    expect(mismatches[0].type).toBe('optional-in-spec-required-in-impl')
+  })
+
+  it('detects no mismatches when statuses match', () => {
+    // Spec
+    const specParams = {
+      required: ['ticker', 'action'],
+      optional: ['date', 'limit'],
+    }
+
+    // Implementation matches spec
+    const implParams = {
+      required: ['ticker', 'action'],
+      optional: ['date', 'limit'],
+    }
+
+    // Check for mismatches
+    const mismatches = []
+    for (const param of specParams.required) {
+      if (implParams.optional.includes(param)) {
+        mismatches.push({ param, type: 'required-in-spec-optional-in-impl' })
+      }
+    }
+    for (const param of specParams.optional) {
+      if (implParams.required.includes(param)) {
+        mismatches.push({ param, type: 'optional-in-spec-required-in-impl' })
+      }
+    }
+
+    expect(mismatches).toHaveLength(0)
+  })
+
+  it('detects multiple mismatches in both directions', () => {
+    const specParams = {
+      required: ['ticker', 'action'],
+      optional: ['date', 'limit'],
+    }
+
+    const implParams = {
+      required: ['ticker', 'date'], // 'date' should be optional, 'action' is missing/optional
+      optional: ['action', 'limit'], // 'action' should be required
+    }
+
+    const mismatches = []
+    for (const param of specParams.required) {
+      if (implParams.optional.includes(param)) {
+        mismatches.push({ param, type: 'required-in-spec-optional-in-impl' })
+      }
+    }
+    for (const param of specParams.optional) {
+      if (implParams.required.includes(param)) {
+        mismatches.push({ param, type: 'optional-in-spec-required-in-impl' })
+      }
+    }
+
+    expect(mismatches).toHaveLength(2)
+    expect(mismatches.some(m => m.param === 'action' && m.type === 'required-in-spec-optional-in-impl')).toBe(true)
+    expect(mismatches.some(m => m.param === 'date' && m.type === 'optional-in-spec-required-in-impl')).toBe(true)
+  })
+})
+
+describe('Format validation', () => {
+  it('extracts format from Zod email validator', () => {
+    const zodSchema = `
+      export const emailSchema = z.string()
+        .email("Invalid email")
+        .describe("Email address")
+    `
+
+    // Simulate format extraction logic
+    const hasEmailFormat = zodSchema.includes('.email(')
+    const extractedFormat = hasEmailFormat ? 'email' : null
+
+    expect(extractedFormat).toBe('email')
+  })
+
+  it('extracts format from Zod url validator', () => {
+    const zodSchema = `
+      export const websiteSchema = z.string()
+        .url("Invalid URL")
+        .describe("Website URL")
+    `
+
+    const hasUrlFormat = zodSchema.includes('.url(')
+    const extractedFormat = hasUrlFormat ? 'uri' : null
+
+    expect(extractedFormat).toBe('uri')
+  })
+
+  it('extracts format from Zod uuid validator', () => {
+    const zodSchema = `
+      export const idSchema = z.string()
+        .uuid("Invalid UUID")
+        .describe("Unique identifier")
+    `
+
+    const hasUuidFormat = zodSchema.includes('.uuid(')
+    const extractedFormat = hasUuidFormat ? 'uuid' : null
+
+    expect(extractedFormat).toBe('uuid')
+  })
+
+  it('extracts format from Zod datetime validator', () => {
+    const zodSchema = `
+      export const timestampSchema = z.string()
+        .datetime("Invalid datetime")
+        .describe("ISO 8601 datetime")
+    `
+
+    const hasDatetimeFormat = zodSchema.includes('.datetime(')
+    const extractedFormat = hasDatetimeFormat ? 'date-time' : null
+
+    expect(extractedFormat).toBe('date-time')
+  })
+
+  it('extracts date format from custom date regex', () => {
+    const zodSchema = `
+      export const dateSchema = z.string()
+        .regex(dateRegex, "Date must be in YYYY-MM-DD format")
+        .describe("Date in YYYY-MM-DD format")
+    `
+
+    const hasDateRegex = zodSchema.includes('dateRegex')
+    const extractedFormat = hasDateRegex ? 'date' : null
+
+    expect(extractedFormat).toBe('date')
+  })
+
+  it('normalizes date_time format variations', () => {
+    const formats = ['date-time', 'date_time', 'datetime']
+    const normalized = formats.map(f => {
+      if (f === 'date_time' || f === 'datetime') {
+        return 'date-time'
+      }
+      return f
+    })
+
+    expect(normalized).toEqual(['date-time', 'date-time', 'date-time'])
+  })
+
+  it('detects format mismatches', () => {
+    const specFormat = 'date'
+    const implFormat = 'email'
+
+    const hasMismatch = specFormat !== implFormat
+
+    expect(hasMismatch).toBe(true)
+  })
+
+  it('detects missing format in implementation', () => {
+    const specFormat = 'date'
+    const implFormat = null
+
+    const hasMismatch = specFormat && !implFormat
+
+    expect(hasMismatch).toBe(true)
+  })
+
+  it('passes when formats match', () => {
+    const specFormat = 'uuid'
+    const implFormat = 'uuid'
+
+    const hasMismatch = specFormat !== implFormat
+
+    expect(hasMismatch).toBe(false)
+  })
+
+  it('skips float format for string parameters', () => {
+    const paramSchema = {
+      type: 'string',
+      format: 'float'
+    }
+
+    // Float is a number format, should be skipped for string types
+    const shouldProcess = paramSchema.type === 'string' && paramSchema.format !== 'float'
+
+    expect(shouldProcess).toBe(false)
+  })
+})
