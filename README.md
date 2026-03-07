@@ -9,7 +9,7 @@ The official [Unusual Whales](https://unusualwhales.com) MCP server. Connect any
 
 ### 1. Get an API Key
 
-Get your key at [unusualwhales.com/account/api-key](https://unusualwhales.com/account/api-key).
+Get your key at [unusualwhales.com/settings/api-dashboard](https://unusualwhales.com/settings/api-dashboard).
 
 ### 2. Connect
 
