@@ -15,6 +15,8 @@ import { newsTool, handleNews } from "./news.js"
 import { alertsTool, handleAlerts } from "./alerts.js"
 import { politiciansTool, handlePoliticians } from "./politicians.js"
 import { cryptoTool, handleCrypto } from "./crypto.js"
+import { fundamentalsTool, handleFundamentals } from "./fundamentals.js"
+import { technicalsTool, handleTechnicals } from "./technicals.js"
 import type { ToolResponse } from "./helpers.js"
 
 export type { ToolResponse }
@@ -68,6 +70,8 @@ const toolRegistrations: ToolRegistration[] = [
   { tool: alertsTool, handler: handleAlerts },
   { tool: politiciansTool, handler: handlePoliticians },
   { tool: cryptoTool, handler: handleCrypto },
+  { tool: fundamentalsTool, handler: handleFundamentals },
+  { tool: technicalsTool, handler: handleTechnicals },
 ]
 
 export const tools = toolRegistrations.map((reg) => reg.tool)
