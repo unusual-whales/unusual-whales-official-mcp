@@ -20,6 +20,7 @@ import { digitalAssetsCatalog } from "./digital-assets.js"
 import { financialsCatalog } from "./financials.js"
 import { indicatorsCatalog } from "./indicators.js"
 import { publicDataSpecs } from "./public-data.js"
+import { predictionsCatalog } from "./predictions.js"
 
 const catalogTools = [
   equitiesCatalog,
@@ -41,6 +42,7 @@ const catalogTools = [
   digitalAssetsCatalog,
   financialsCatalog,
   indicatorsCatalog,
+  predictionsCatalog,
 ].map(compileCatalog)
 
 const standaloneTools = publicDataSpecs.map(compileStandalone)
