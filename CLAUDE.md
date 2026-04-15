@@ -83,3 +83,21 @@ interface ToolCatalog {
 - Unit tests mock `gateway.ts` before importing engine/validation modules
 - Integration test (`tests/integration/server.test.ts`) spins up full server lifecycle
 - Use `vi.fn()` for mocking; vitest 4.0 with v8 coverage
+
+## Contributing / PR Workflow
+
+No direct push to `unusual-whales` org. Push via fork:
+
+```bash
+# gh CLI not on PATH in bash — use full path
+"/c/Program Files/GitHub CLI/gh.exe" auth status
+
+# Push to fork, then open PR to upstream
+git push myfork <branch>
+"/c/Program Files/GitHub CLI/gh.exe" pr create \
+  --repo unusual-whales/unusual-whales-official-mcp \
+  --head anilmallembakam:<branch>
+```
+
+- Fork remote: `myfork` → `https://github.com/anilmallembakam/unusual-whales-official-mcp`
+- Existing PR: unusual-whales/unusual-whales-official-mcp#17 (CLAUDE.md addition)
