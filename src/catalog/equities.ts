@@ -15,15 +15,15 @@ export const equitiesCatalog: ToolCatalog = {
 Available commands:
 - info: Get stock information (ticker required)
 - ohlc: Get OHLC candles (ticker, candle_size required; date, timeframe, end_date, limit optional)
-- option_chains: Get option chains (ticker required; date optional)
-- option_contracts: Get option contracts (ticker, expiry required; option_type, filters, limit optional)
+- option_chains: Get option chains (ticker required; date, greeks optional)
+- option_contracts: Get option contracts (ticker required; expiry, option_type, min_dte, max_dte, filters, limit optional)
 - greeks: Get greeks data (ticker, expiry required; date optional)
 - greek_exposure: Get gamma/delta/vanna exposure (ticker required; date, timeframe optional)
 - greek_exposure_by_expiry: Get greek exposure by expiry (ticker required; date optional)
 - greek_exposure_by_strike: Get greek exposure by strike (ticker required; date optional)
 - greek_exposure_by_strike_expiry: Get greek exposure by strike and expiry (ticker, expiry required; date optional)
 - gex_levels: Get GEX (gamma exposure) levels (ticker required; date optional)
-- option_stance: Get option trade-stance ranking (ticker, stance required; limit, type, date optional)
+- option_stance: Get option trade-stance ranking (ticker, stance required; limit, type, option_symbol, date optional)
 - options_pulse: Get options pulse for a ticker (ticker required; date optional)
 - greek_flow: Get greek flow (ticker required; date optional)
 - greek_flow_by_expiry: Get greek flow by expiry (ticker, expiry required; date optional)
@@ -58,6 +58,7 @@ Available commands:
 - volatility_character: Get volatility character (ticker required; date optional)
 - volatility_variance_risk_premium: Get variance risk premium (ticker required; date optional)
 - stock_state: Get stock state (ticker required)
+- quote: Get the latest trade, NBBO and per-session quote change statistics (ticker required)
 - insider_buy_sells: Get insider buy/sells for stock (ticker required; limit optional)
 - ownership: PREMIUM — Get ownership data (ticker required; limit optional). Requires premium API plan, contact support@unusualwhales.com to upgrade
 - tickers_by_sector: Get tickers in sector (sector required)
@@ -67,15 +68,15 @@ Available commands:
   commands: [
     { name: "info", route: "/api/stock/{ticker}/info", params: z.object({ ticker }) },
     { name: "ohlc", route: "/api/stock/{ticker}/ohlc/{candle_size}", params: z.object({ ticker, candle_size: candleSize, date: dateStr.optional(), timeframe: timeframe.optional(), end_date: dateStr.optional(), limit: z.number().int().min(1).max(2500).optional() }) },
-    { name: "option_chains", route: "/api/stock/{ticker}/option-chains", params: z.object({ ticker, date: dateStr.optional() }) },
-    { name: "option_contracts", route: "/api/stock/{ticker}/option-contracts", params: z.object({ ticker, expiry, option_type: optionKind.optional(), vol_greater_oi: z.boolean().optional(), exclude_zero_vol_chains: z.boolean().optional(), exclude_zero_dte: z.boolean().optional(), exclude_zero_oi_chains: z.boolean().optional(), maybe_otm_only: z.boolean().optional(), option_symbol: z.string().optional(), limit: z.number().int().min(1).max(500).default(500).optional(), page: pageNum.optional() }) },
+    { name: "option_chains", route: "/api/stock/{ticker}/option-chains", params: z.object({ ticker, date: dateStr.optional(), greeks: z.boolean().describe("Return an enriched row per contract (strike, expiry, type, NBBO, IV, OI, volume) instead of bare symbols").optional() }) },
+    { name: "option_contracts", route: "/api/stock/{ticker}/option-contracts", params: z.object({ ticker, expiry: expiry.optional(), option_type: optionKind.optional(), vol_greater_oi: z.boolean().optional(), exclude_zero_vol_chains: z.boolean().optional(), exclude_zero_dte: z.boolean().optional(), exclude_zero_oi_chains: z.boolean().optional(), maybe_otm_only: z.boolean().optional(), min_dte: z.number().int().min(0).describe("Minimum days to expiration").optional(), max_dte: z.number().int().min(0).describe("Maximum days to expiration").optional(), option_symbol: z.array(z.string()).describe("Option symbols to filter by").optional(), limit: z.number().int().min(1).max(500).default(500).optional(), page: pageNum.optional() }), queryRenames: { option_symbol: "option_symbol[]" } },
     { name: "greeks", route: "/api/stock/{ticker}/greeks", params: z.object({ ticker, expiry, date: dateStr.optional() }) },
     { name: "greek_exposure", route: "/api/stock/{ticker}/greek-exposure", params: z.object({ ticker, date: dateStr.optional(), timeframe: timeframe.optional() }) },
     { name: "greek_exposure_by_expiry", route: "/api/stock/{ticker}/greek-exposure/expiry", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "greek_exposure_by_strike", route: "/api/stock/{ticker}/greek-exposure/strike", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "greek_exposure_by_strike_expiry", route: "/api/stock/{ticker}/greek-exposure/strike-expiry", params: z.object({ ticker, expiry, date: dateStr.optional() }) },
     { name: "gex_levels", route: "/api/stock/{ticker}/gex-levels", params: z.object({ ticker, date: dateStr.optional() }) },
-    { name: "option_stance", route: "/api/stock/{ticker}/option-stance", params: z.object({ ticker, stance: z.enum(["sell_premium", "sell_vega", "directional", "leaps", "cheapies"]).describe("Trade-stance category to rank"), limit: z.number().int().min(1).max(500).optional(), type: z.enum(["Calls", "Puts"]).describe("Filter by option type").optional(), date: dateStr.optional() }) },
+    { name: "option_stance", route: "/api/stock/{ticker}/option-stance", params: z.object({ ticker, stance: z.enum(["sell_premium", "sell_vega", "directional", "leaps", "cheapies"]).describe("Trade-stance category to rank"), limit: z.number().int().min(1).max(100).describe("Max contracts to return (default 25, max 100)").optional(), type: z.enum(["Calls", "Puts"]).describe("Filter by option type").optional(), option_symbol: z.string().describe("Score a single specific contract (OCC option symbol, e.g. NVDA270115P00275000) instead of ranking the chain").optional(), date: dateStr.optional() }) },
     { name: "options_pulse", route: "/api/stock/{ticker}/options-pulse", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "greek_flow", route: "/api/stock/{ticker}/greek-flow", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "greek_flow_by_expiry", route: "/api/stock/{ticker}/greek-flow/{expiry}", params: z.object({ ticker, expiry, date: dateStr.optional() }) },
@@ -110,6 +111,7 @@ Available commands:
     { name: "volatility_character", route: "/api/stock/{ticker}/volatility/character", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "volatility_variance_risk_premium", route: "/api/stock/{ticker}/volatility/variance-risk-premium", params: z.object({ ticker, date: dateStr.optional() }) },
     { name: "stock_state", route: "/api/stock/{ticker}/stock-state", params: z.object({ ticker }) },
+    { name: "quote", route: "/api/stock/{ticker}/quote", params: z.object({ ticker }) },
     { name: "insider_buy_sells", route: "/api/stock/{ticker}/insider-buy-sells", params: z.object({ ticker }) },
     { name: "ownership", route: "/api/stock/{ticker}/ownership", premium: true, params: z.object({ ticker, limit: z.number().int().min(1).max(100).default(20).optional() }) },
     { name: "tickers_by_sector", route: "/api/stock/{sector}/tickers", params: z.object({ sector: sectorEnum }) },

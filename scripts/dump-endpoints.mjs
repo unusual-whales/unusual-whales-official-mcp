@@ -8,44 +8,13 @@
 
 import { zodToJsonSchema } from "../src/validation.ts"
 
-import { equitiesCatalog } from "../src/catalog/equities.ts"
-import { derivativesCatalog } from "../src/catalog/derivatives.ts"
-import { flowAnalysisCatalog } from "../src/catalog/flow-analysis.ts"
-import { marketIntelCatalog } from "../src/catalog/market-intel.ts"
-import { darkPoolsCatalog } from "../src/catalog/dark-pools.ts"
-import { congressCatalog, politiciansCatalog } from "../src/catalog/governance.ts"
-import { unusualTradesCatalog } from "../src/catalog/governance-unusual-trades.ts"
-import { privateMarketsCatalog } from "../src/catalog/private-markets.ts"
-import { companiesExtrasCatalog } from "../src/catalog/companies-extras.ts"
-import { macroCatalog } from "../src/catalog/macro.ts"
-import { forexCatalog } from "../src/catalog/forex.ts"
-import { digitalCurrenciesCatalog } from "../src/catalog/digital-currencies.ts"
-import { intelCatalog } from "../src/catalog/intel.ts"
-import { insiderActivityCatalog } from "../src/catalog/insider-activity.ts"
-import { institutionalCatalog } from "../src/catalog/institutional.ts"
-import { calendarEventsCatalog } from "../src/catalog/calendar-events.ts"
-import { fundTrackingCatalog } from "../src/catalog/fund-tracking.ts"
-import { screeningCatalog } from "../src/catalog/screening.ts"
-import { shortSellingCatalog } from "../src/catalog/short-selling.ts"
-import { seasonalPatternsCatalog } from "../src/catalog/seasonal-patterns.ts"
-import { headlinesCatalog } from "../src/catalog/headlines.ts"
-import { notificationsCatalog } from "../src/catalog/notifications.ts"
-import { digitalAssetsCatalog } from "../src/catalog/digital-assets.ts"
-import { financialsCatalog } from "../src/catalog/financials.ts"
-import { indicatorsCatalog } from "../src/catalog/indicators.ts"
-import { predictionsCatalog } from "../src/catalog/predictions.ts"
-import { publicDataSpecs } from "../src/catalog/public-data.ts"
+import { createRequire } from "module"
 
-const catalogs = [
-  equitiesCatalog, derivativesCatalog, flowAnalysisCatalog, marketIntelCatalog,
-  darkPoolsCatalog, congressCatalog, politiciansCatalog, unusualTradesCatalog,
-  privateMarketsCatalog, companiesExtrasCatalog, macroCatalog, forexCatalog,
-  digitalCurrenciesCatalog, intelCatalog, insiderActivityCatalog,
-  institutionalCatalog, calendarEventsCatalog, fundTrackingCatalog,
-  screeningCatalog, shortSellingCatalog, seasonalPatternsCatalog,
-  headlinesCatalog, notificationsCatalog, digitalAssetsCatalog,
-  financialsCatalog, indicatorsCatalog, predictionsCatalog,
-]
+import { rawCatalogs as catalogs, standaloneSpecs } from "../src/catalog/registry.ts"
+
+// Stamp the package version rather than a timestamp: these files are checked
+// in, so a volatile field would make every regeneration a diff.
+const pkg = createRequire(import.meta.url)("../package.json")
 
 function paramSchema(zodObject) {
   try {
@@ -56,7 +25,7 @@ function paramSchema(zodObject) {
 }
 
 const out = {
-  generated_at: new Date().toISOString(),
+  generated_for_version: pkg.version,
   base_url: "https://api.unusualwhales.com",
   auth: "Bearer token via Authorization header. Get one at https://unusualwhales.com/api-tokens",
   catalogs: catalogs.map((c) => ({
@@ -71,7 +40,7 @@ const out = {
       ...(cmd.queryRenames ? { query_renames: cmd.queryRenames } : {}),
     })),
   })),
-  standalone_endpoints: publicDataSpecs.map((s) => ({
+  standalone_endpoints: standaloneSpecs.map((s) => ({
     id: s.id,
     summary: s.summary,
     route: s.route,

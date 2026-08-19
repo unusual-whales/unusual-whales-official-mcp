@@ -5,7 +5,7 @@
 [![npm](https://img.shields.io/npm/v/@unusualwhales/mcp)](https://www.npmjs.com/package/@unusualwhales/mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-The official [Unusual Whales](https://unusualwhales.com) MCP server. Connect any MCP-compatible client to 100+ market data endpoints covering options flow, dark pool, congressional trading, Greek exposure, volatility, and more.
+The official [Unusual Whales](https://unusualwhales.com) MCP server. Connect any MCP-compatible client to 200+ market data endpoints covering options flow, dark pool, congressional trading, Greek exposure, volatility, futures, and more.
 
 ## Quick Start
 
@@ -160,14 +160,15 @@ Deep dive on NVDA - options, dark pool, insider activity
 
 ## Tools
 
-The server exposes tools across 15 data categories. Your MCP client will call them automatically based on your questions.
+The server exposes tools across 16 data categories. Your MCP client will call them automatically based on your questions.
 
 | Category | Examples |
 |----------|----------|
-| **Stock** | Options chains, Greeks, IV rank, OHLC candles, max pain, OI, volatility |
+| **Stock** | Options chains, Greeks, IV rank, OHLC candles, max pain, OI, volatility, quotes |
 | **Options** | Contract flow, historic prices, intraday data, volume profiles |
-| **Flow** | Options flow alerts, full tape, net flow by expiry, sector flow |
-| **Dark Pool** | Transactions with NBBO context, price level filtering |
+| **Flow** | Options flow alerts, the full trades tape, multi-leg strategies, net flow by expiry, sector flow |
+| **Dark Pool** | Transactions with NBBO context, price level filtering, volume by price level |
+| **Futures** *(Premium)* | CME contracts, cross-contract flow, time & sales, OHLCV candles, session stats — requires the Advanced tier or `futures` add-on |
 | **Congress** | Congressional trades, late filings, individual member activity |
 | **Politicians** *(Premium)* | Portfolios, recent trades, holdings by ticker — [contact support](mailto:support@unusualwhales.com) to upgrade |
 | **Insider** | Insider transactions, sector flow, ticker flow |
@@ -177,7 +178,7 @@ The server exposes tools across 15 data categories. Your MCP client will call th
 | **ETF** | Holdings, exposure, inflows/outflows, sector weights |
 | **Shorts** | Short interest, FTDs, short volume ratio, borrow rates |
 | **Seasonality** | Monthly performers, yearly patterns, historical seasonality |
-| **Screener** | Stock screener, options screener, analyst ratings |
+| **Screener** | Stock screener, options screener, unusual options activity, analyst ratings |
 | **News** | Market news headlines |
 
 ### Public Stock Fundamentals and Technicals
@@ -296,6 +297,29 @@ All optional. The defaults work for most users.
 | `UW_CIRCUIT_BREAKER_THRESHOLD` | `5` | Failures before circuit opens |
 | `UW_CIRCUIT_BREAKER_RESET_TIMEOUT` | `30000` | Ms before retrying after circuit opens |
 | `LOG_LEVEL` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
+| `UW_ENABLE_PREMIUM_TOOLS` | unset | Set to `1`/`true` to expose every premium tool and command |
+| `UW_PREMIUM_TOOLS` | unset | Comma-separated allowlist of premium tools/commands to expose, e.g. `uw_futures,uw_flow.full_tape` |
+
+## Endpoint Schema
+
+Every endpoint the server exposes is published as machine-readable JSON, generated from the
+same catalog the server registers from:
+
+| File | Contents |
+|------|----------|
+| [`docs/endpoints.json`](docs/endpoints.json) | Full JSON Schema for every command's parameters, plus route and query-param renames |
+| [`docs/endpoints-compact.json`](docs/endpoints-compact.json) | One row per endpoint — route, description, required/optional params. Use this to find an endpoint, then look it up in the full file |
+
+Both are regenerated with `npm run docs` and verified in CI, so they cannot drift from the
+server. To check the catalog against the live upstream API:
+
+```bash
+npm run fetch-spec   # download the current OpenAPI spec
+npm run check-api    # report missing endpoints, unknown routes, and param drift
+```
+
+WebSocket channels (`/api/socket/*`) are intentionally not exposed: MCP is request/response.
+Use the [REST endpoints](https://api.unusualwhales.com/docs) directly for streaming.
 
 ## Contributing
 

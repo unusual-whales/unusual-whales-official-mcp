@@ -45,7 +45,7 @@
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "fetch-spec": "node scripts/fetch-api-spec.js",
-    "check-api": "node scripts/check-api-sync.js",
+    "check-api": "tsx scripts/check-api-sync.mjs",
     "prepublishOnly": "npm run lint && npm run build",
     "test": "vitest run",
     "test:unit": "vitest run tests/unit",
@@ -54,8 +54,10 @@
     "test:watch:unit": "vitest tests/unit",
     "test:coverage": "vitest run --coverage",
     "coverage:open": "vitest run --coverage && open coverage/index.html",
-    "validate": "npm run lint && npm run build && npm test",
-    "prepare": "husky"
+    "validate": "npm run lint && npm run build && npm test && npm run docs:check",
+    "prepare": "husky",
+    "docs": "tsx scripts/dump-endpoints.mjs > docs/endpoints.json && tsx scripts/dump-endpoints-compact.mjs > docs/endpoints-compact.json",
+    "docs:check": "npm run docs && git diff --exit-code --stat docs/"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -70,6 +72,7 @@
     "eslint": "^9.39.2",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "tsx": "^4.20.3",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.51.0",
     "vitest": "^4.0.17",

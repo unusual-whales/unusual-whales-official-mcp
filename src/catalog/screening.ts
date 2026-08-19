@@ -9,7 +9,8 @@ export const screeningCatalog: ToolCatalog = {
 Available commands:
 - stocks: Screen stocks with various filters
 - option_contracts: Screen option contracts with filters
-- analysts: Screen analyst ratings`,
+- analysts: Screen analyst ratings
+- unusual_activity: Get option contracts flagged as unusual — the API equivalent of the live options flow "unusual" view (all params optional)`,
   commands: [
     {
       name: "stocks",
@@ -199,7 +200,26 @@ Available commands:
         limit: z.number().int().min(1).max(500).default(1).optional(),
         recommendation: z.enum(["buy", "hold", "sell"]).optional(),
         action: z.enum(["initiated", "reiterated", "downgraded", "upgraded", "maintained"]).optional(),
+        newer_than: z.string().describe("Only ratings at/after this UTC timestamp (ISO-8601)").optional(),
+        older_than: z.string().describe("Only ratings at/before this UTC timestamp (ISO-8601)").optional(),
       }),
+    },
+    {
+      name: "unusual_activity",
+      route: "/api/option-activity/unusual",
+      params: z.object({
+        ticker_symbol: z.string().describe("Comma-separated tickers. Prefix with '-' to exclude").optional(),
+        sectors: z.array(z.string()).describe("Filter by underlying sector(s)").optional(),
+        issue_types: z.array(z.string()).describe("Filter by issue type(s), e.g. 'Common Stock', 'ETF'").optional(),
+        unusual: z.boolean().describe("Apply the unusual preset (volume>OI, OTM, DTE<=60, ask-side>=50%, premium>=$10k)").optional(),
+        min_premium: z.number().int().nonnegative().describe("Minimum total premium on the contract").optional(),
+        max_dte: z.number().int().describe("Maximum days to expiry").optional(),
+        order: contractScreenerOrderBy.optional(),
+        order_direction: z.enum(["asc", "desc"]).describe("Sort direction. Defaults to descending").optional(),
+        limit: z.number().int().min(1).max(200).describe("Maximum number of results (default 100, max 200)").optional(),
+        date: z.string().describe("Date in YYYY-MM-DD format").optional(),
+      }),
+      queryRenames: { sectors: "sectors[]", issue_types: "issue_types[]" },
     },
   ],
 }

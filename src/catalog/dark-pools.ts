@@ -9,6 +9,7 @@ export const darkPoolsCatalog: ToolCatalog = {
 Available commands:
 - recent: Get recent darkpool trades across the market
 - ticker: Get darkpool trades for a specific ticker
+- price_levels: Get darkpool & lit volume concentration by price level for a ticker (ticker required; date optional)
 
 Filtering options include premium range, size range, and volume range.`,
   commands: [
@@ -45,6 +46,14 @@ Filtering options include premium range, size range, and volume range.`,
         max_volume: z.number().int().nonnegative().describe("Maximum volume").optional(),
         order: z.enum(["desc", "asc"]).describe("Sort direction").optional(),
         order_by: z.enum(["executed_at", "trf_executed_at", "premium", "size", "volume"]).describe("Field to sort by").optional(),
+      }),
+    },
+    {
+      name: "price_levels",
+      route: "/api/darkpool/{ticker}/price-levels",
+      params: z.object({
+        ticker: ticker.describe("Ticker symbol (required)"),
+        date: dateStr.describe("Date in YYYY-MM-DD format. Must be the current or a past date; defaults to the current/last market day").optional(),
       }),
     },
   ],

@@ -4,7 +4,7 @@
  * Fetch and save the UnusualWhales OpenAPI spec.
  *
  * Downloads the latest spec and saves it to uw-api-spec.yaml.
- * This should be run before check-api-sync.js to update the local spec.
+ * This should be run before check-api-sync.mjs to update the local spec.
  */
 
 import { writeFileSync } from 'fs'

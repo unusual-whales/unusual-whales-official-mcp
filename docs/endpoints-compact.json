@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-05-26T04:28:21.101Z",
+  "generated_for_version": "1.1.2",
   "base_url": "https://api.unusualwhales.com",
   "auth": "Bearer token via Authorization header. Get one at https://unusualwhales.com/api-tokens",
-  "total_endpoints": 172,
+  "total_endpoints": 201,
   "catalogs": [
     {
       "tool_id": "uw_stock",
@@ -37,30 +37,33 @@
         {
           "name": "option_chains",
           "route": "/api/stock/{ticker}/option-chains",
-          "description": "Get option chains (ticker required; date optional)",
+          "description": "Get option chains (ticker required; date, greeks optional)",
           "required": [
             "ticker"
           ],
           "optional": [
-            "date"
+            "date",
+            "greeks"
           ],
           "premium": false
         },
         {
           "name": "option_contracts",
           "route": "/api/stock/{ticker}/option-contracts",
-          "description": "Get option contracts (ticker, expiry required; option_type, filters, limit optional)",
+          "description": "Get option contracts (ticker required; expiry, option_type, min_dte, max_dte, filters, limit optional)",
           "required": [
-            "ticker",
-            "expiry"
+            "ticker"
           ],
           "optional": [
+            "expiry",
             "option_type",
             "vol_greater_oi",
             "exclude_zero_vol_chains",
             "exclude_zero_dte",
             "exclude_zero_oi_chains",
             "maybe_otm_only",
+            "min_dte",
+            "max_dte",
             "option_symbol",
             "limit",
             "page"
@@ -124,6 +127,46 @@
           "required": [
             "ticker",
             "expiry"
+          ],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "gex_levels",
+          "route": "/api/stock/{ticker}/gex-levels",
+          "description": "Get GEX (gamma exposure) levels (ticker required; date optional)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "option_stance",
+          "route": "/api/stock/{ticker}/option-stance",
+          "description": "Get option trade-stance ranking (ticker, stance required; limit, type, option_symbol, date optional)",
+          "required": [
+            "ticker",
+            "stance"
+          ],
+          "optional": [
+            "limit",
+            "type",
+            "option_symbol",
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "options_pulse",
+          "route": "/api/stock/{ticker}/options-pulse",
+          "description": "Get options pulse for a ticker (ticker required; date optional)",
+          "required": [
+            "ticker"
           ],
           "optional": [
             "date"
@@ -441,6 +484,21 @@
           "premium": false
         },
         {
+          "name": "spot_exposures_by_expiry",
+          "route": "/api/stock/{ticker}/spot-exposures/{expiry}/strike",
+          "description": "DEPRECATED — Get spot GEX exposures by strike for a single expiry (ticker, expiry required; date, min_strike, max_strike optional)",
+          "required": [
+            "ticker",
+            "expiry"
+          ],
+          "optional": [
+            "date",
+            "min_strike",
+            "max_strike"
+          ],
+          "premium": false
+        },
+        {
           "name": "historical_risk_reversal_skew",
           "route": "/api/stock/{ticker}/historical-risk-reversal-skew",
           "description": "Get risk reversal skew (ticker, expiry, delta required; date, timeframe optional)",
@@ -493,9 +551,55 @@
           "premium": false
         },
         {
+          "name": "volatility_anomaly",
+          "route": "/api/stock/{ticker}/volatility/anomaly",
+          "description": "Get volatility anomaly score (ticker required; date optional)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "volatility_character",
+          "route": "/api/stock/{ticker}/volatility/character",
+          "description": "Get volatility character (ticker required; date optional)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "volatility_variance_risk_premium",
+          "route": "/api/stock/{ticker}/volatility/variance-risk-premium",
+          "description": "Get variance risk premium (ticker required; date optional)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
           "name": "stock_state",
           "route": "/api/stock/{ticker}/stock-state",
           "description": "Get stock state (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "quote",
+          "route": "/api/stock/{ticker}/quote",
+          "description": "Get the latest trade, NBBO and per-session quote change statistics (ticker required)",
           "required": [
             "ticker"
           ],
@@ -545,12 +649,14 @@
         {
           "name": "flow_alerts",
           "route": "/api/stock/{ticker}/flow-alerts",
-          "description": "Get flow alerts for a specific ticker (ticker required; limit optional)",
+          "description": "Get flow alerts for a specific ticker (ticker required; limit, is_ask_side, is_bid_side optional)",
           "required": [
             "ticker"
           ],
           "optional": [
-            "limit"
+            "limit",
+            "is_ask_side",
+            "is_bid_side"
           ],
           "premium": false
         },
@@ -683,7 +789,10 @@
             "min_marketcap",
             "max_marketcap",
             "newer_than",
-            "older_than"
+            "older_than",
+            "min_days_between_expiry_and_earnings",
+            "max_days_between_expiry_and_earnings",
+            "unusual"
           ],
           "premium": false
         },
@@ -786,10 +895,153 @@
           "premium": false
         },
         {
-          "name": "unusual_tickers",
-          "route": "/api/option-trades/unusual-tickers",
-          "description": "Get tickers with unusual options activity",
+          "name": "exchange_breakdown",
+          "route": "/api/option-trades/exchange-breakdown/{date}",
+          "description": "Get exchange & trade-code breakdown for a date (date required; ticker, by_trade_code, min_premium, limit, page, order optional)",
+          "required": [
+            "date"
+          ],
+          "optional": [
+            "ticker",
+            "by_trade_code",
+            "min_premium",
+            "limit",
+            "page",
+            "order"
+          ],
+          "premium": false
+        },
+        {
+          "name": "optionable_tickers",
+          "route": "/api/option-trades/optionable-tickers",
+          "description": "Get the list of optionable tickers (ticker optional)",
           "required": [],
+          "optional": [
+            "ticker"
+          ],
+          "premium": false
+        },
+        {
+          "name": "option_trades",
+          "route": "/api/option-trades",
+          "description": "Filter the full option trades tape — same data and filters as the live options flow page (all params optional)",
+          "required": [],
+          "optional": [
+            "limit",
+            "ticker_symbol",
+            "option_contracts",
+            "chain",
+            "strike",
+            "type",
+            "newer_than",
+            "older_than",
+            "canceled",
+            "is_multi_leg",
+            "volume_greater_oi",
+            "exclude_deep_itm",
+            "force_15_min_delay",
+            "hide_expired",
+            "include_agg_trades",
+            "intraday_only",
+            "is_otm",
+            "opening",
+            "opex_only",
+            "size_greater_oi",
+            "exchanges",
+            "excluded_tags",
+            "expiry_dates",
+            "industries",
+            "issue_types",
+            "marketcap_size",
+            "report_flag",
+            "sectors",
+            "tags",
+            "trade_codes",
+            "min_ask_perc",
+            "max_ask_perc",
+            "min_bid_perc",
+            "max_bid_perc",
+            "min_bull_perc",
+            "max_bull_perc",
+            "min_bear_perc",
+            "max_bear_perc",
+            "min_skew",
+            "max_skew",
+            "min_days_between_expiry_and_earnings",
+            "max_days_between_expiry_and_earnings",
+            "min_dte",
+            "max_dte",
+            "min_earnings_dte",
+            "max_earnings_dte",
+            "min_open_interest",
+            "max_open_interest",
+            "min_volume",
+            "max_volume",
+            "min_size",
+            "max_size",
+            "min_delta",
+            "max_delta",
+            "min_gamma",
+            "max_gamma",
+            "min_iv",
+            "max_iv",
+            "min_theta",
+            "max_theta",
+            "min_diff",
+            "max_diff",
+            "min_marketcap",
+            "max_marketcap",
+            "min_strike",
+            "max_strike",
+            "min_vol_oi_ratio",
+            "max_vol_oi_ratio",
+            "min_premium",
+            "max_premium",
+            "min_price",
+            "max_price",
+            "min_spread",
+            "max_spread",
+            "min_underlying_price",
+            "max_underlying_price"
+          ],
+          "premium": false
+        },
+        {
+          "name": "multi_leg_trades",
+          "route": "/api/option-trades/multi-leg",
+          "description": "Get detected multi-leg strategies (verticals, condors, butterflies, calendars, diagonals) with net price, premium and greeks (all params optional)",
+          "required": [],
+          "optional": [
+            "limit",
+            "offset",
+            "ticker_symbol",
+            "newer_than",
+            "older_than",
+            "strategy",
+            "exclude_other",
+            "direction",
+            "net_side",
+            "min_size",
+            "max_size",
+            "min_premium",
+            "max_premium",
+            "min_dte",
+            "max_dte",
+            "min_leg_count",
+            "max_leg_count",
+            "all_otm",
+            "issue_types",
+            "sectors"
+          ],
+          "premium": false
+        },
+        {
+          "name": "multi_leg_legs",
+          "route": "/api/option-trades/multi-leg/{id}/legs",
+          "description": "Get the individual legs of one multi-leg strategy (id required)",
+          "required": [
+            "id"
+          ],
           "optional": [],
           "premium": false
         }
@@ -924,6 +1176,78 @@
             "limit"
           ],
           "premium": false
+        },
+        {
+          "name": "options_pulse_sectors",
+          "route": "/api/options-pulse/sectors",
+          "description": "Get options pulse by sector/industry (date optional)",
+          "required": [],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "options_pulse_top",
+          "route": "/api/options-pulse/top",
+          "description": "Options pulse scanner across the market (direction, date, ticker, min_score, max_score, min_txn, limit optional)",
+          "required": [],
+          "optional": [
+            "direction",
+            "date",
+            "ticker",
+            "min_score",
+            "max_score",
+            "min_txn",
+            "limit"
+          ],
+          "premium": false
+        },
+        {
+          "name": "options_pulse_total",
+          "route": "/api/options-pulse/total",
+          "description": "Get market-wide options pulse (date optional)",
+          "required": [],
+          "optional": [
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "volatility_anomaly_top",
+          "route": "/api/volatility/anomaly/top",
+          "description": "Get top volatility anomalies (direction required; date, limit optional)",
+          "required": [
+            "direction"
+          ],
+          "optional": [
+            "date",
+            "limit"
+          ],
+          "premium": false
+        },
+        {
+          "name": "volatility_character_top",
+          "route": "/api/volatility/character/top",
+          "description": "Get top volatility character (date, limit, sort, dir optional)",
+          "required": [],
+          "optional": [
+            "date",
+            "limit",
+            "sort",
+            "dir"
+          ],
+          "premium": false
+        },
+        {
+          "name": "vix_term_structure",
+          "route": "/api/volatility/vix-term-structure",
+          "description": "Get VIX term structure (history_days optional)",
+          "required": [],
+          "optional": [
+            "history_days"
+          ],
+          "premium": false
         }
       ]
     },
@@ -944,7 +1268,9 @@
             "min_size",
             "max_size",
             "min_volume",
-            "max_volume"
+            "max_volume",
+            "order",
+            "order_by"
           ],
           "premium": false
         },
@@ -965,7 +1291,21 @@
             "min_size",
             "max_size",
             "min_volume",
-            "max_volume"
+            "max_volume",
+            "order",
+            "order_by"
+          ],
+          "premium": false
+        },
+        {
+          "name": "price_levels",
+          "route": "/api/darkpool/{ticker}/price-levels",
+          "description": "Get darkpool & lit volume concentration by price level for a ticker (ticker required; date optional)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date"
           ],
           "premium": false
         }
@@ -1008,6 +1348,8 @@
             "name",
             "ticker",
             "date",
+            "date_from",
+            "page",
             "limit"
           ],
           "premium": false
@@ -1019,6 +1361,761 @@
           "required": [],
           "optional": [
             "last_traded_within_months"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_insider",
+      "premium": false,
+      "commands": [
+        {
+          "name": "transactions",
+          "route": "/api/insider/transactions",
+          "description": "Get insider transactions with filters. Use ticker_symbol for comma-separated tickers (e.g., AAPL,INTC)",
+          "required": [],
+          "optional": [
+            "ticker_symbol",
+            "limit",
+            "page",
+            "min_value",
+            "max_value",
+            "min_price",
+            "max_price",
+            "owner_name",
+            "sectors",
+            "industries",
+            "is_director",
+            "is_officer",
+            "is_ten_percent_owner",
+            "is_s_p_500",
+            "transaction_codes",
+            "min_marketcap",
+            "max_marketcap",
+            "market_cap_size",
+            "min_earnings_dte",
+            "max_earnings_dte",
+            "min_amount",
+            "max_amount",
+            "common_stock_only",
+            "security_ad_codes",
+            "start_date",
+            "end_date",
+            "group"
+          ],
+          "premium": false
+        },
+        {
+          "name": "sector_flow",
+          "route": "/api/insider/{sector}/sector-flow",
+          "description": "Get aggregated insider flow for a sector (sector required)",
+          "required": [
+            "sector"
+          ],
+          "optional": [
+            "limit",
+            "page"
+          ],
+          "premium": false
+        },
+        {
+          "name": "ticker_flow",
+          "route": "/api/insider/{ticker}/ticker-flow",
+          "description": "Get aggregated insider flow for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "limit",
+            "page"
+          ],
+          "premium": false
+        },
+        {
+          "name": "insiders",
+          "route": "/api/insider/{ticker}",
+          "description": "Get all insiders for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_institutions",
+      "premium": false,
+      "commands": [
+        {
+          "name": "list",
+          "route": "/api/institutions",
+          "description": "List institutions with filters",
+          "required": [],
+          "optional": [
+            "name",
+            "limit",
+            "page",
+            "order",
+            "order_direction",
+            "min_total_value",
+            "max_total_value",
+            "min_share_value",
+            "max_share_value",
+            "tags"
+          ],
+          "premium": false
+        },
+        {
+          "name": "holdings",
+          "route": "/api/institution/{name}/holdings",
+          "description": "Get holdings for an institution (name required)",
+          "required": [
+            "name"
+          ],
+          "optional": [
+            "ticker_symbol",
+            "date",
+            "start_date",
+            "end_date",
+            "limit",
+            "page",
+            "order",
+            "order_direction",
+            "security_types"
+          ],
+          "premium": false
+        },
+        {
+          "name": "activity",
+          "route": "/api/institution/{name}/activity",
+          "description": "Get trading activity for an institution (name required)",
+          "required": [
+            "name"
+          ],
+          "optional": [
+            "date",
+            "limit",
+            "page",
+            "order",
+            "order_direction"
+          ],
+          "premium": false
+        },
+        {
+          "name": "activity_v2",
+          "route": "/api/institution/{name}/activity/v2",
+          "description": "Get trading activity v2 with enhanced data for an institution (name required; date, start_date, end_date optional)",
+          "required": [
+            "name"
+          ],
+          "optional": [
+            "ticker_symbol",
+            "date",
+            "start_date",
+            "end_date",
+            "limit",
+            "page",
+            "order",
+            "order_direction"
+          ],
+          "premium": false
+        },
+        {
+          "name": "sectors",
+          "route": "/api/institution/{name}/sectors",
+          "description": "Get sector exposure for an institution (name required)",
+          "required": [
+            "name"
+          ],
+          "optional": [
+            "date",
+            "limit",
+            "page"
+          ],
+          "premium": false
+        },
+        {
+          "name": "ownership",
+          "route": "/api/institution/{ticker}/ownership",
+          "description": "Get institutional ownership of a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "date",
+            "start_date",
+            "end_date",
+            "tags",
+            "limit",
+            "page",
+            "order",
+            "order_direction"
+          ],
+          "premium": false
+        },
+        {
+          "name": "latest_filings",
+          "route": "/api/institutions/latest_filings",
+          "description": "Get latest institutional filings",
+          "required": [],
+          "optional": [
+            "name",
+            "date",
+            "limit",
+            "page",
+            "order",
+            "order_direction"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_earnings",
+      "premium": false,
+      "commands": [
+        {
+          "name": "premarket",
+          "route": "/api/earnings/premarket",
+          "description": "Get premarket earnings for a date",
+          "required": [],
+          "optional": [
+            "date",
+            "limit",
+            "page"
+          ],
+          "premium": false
+        },
+        {
+          "name": "afterhours",
+          "route": "/api/earnings/afterhours",
+          "description": "Get afterhours earnings for a date",
+          "required": [],
+          "optional": [
+            "date",
+            "limit",
+            "page"
+          ],
+          "premium": false
+        },
+        {
+          "name": "ticker",
+          "route": "/api/earnings/{ticker}",
+          "description": "Get historical earnings for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_etf",
+      "premium": false,
+      "commands": [
+        {
+          "name": "info",
+          "route": "/api/etfs/{ticker}/info",
+          "description": "Get ETF information (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "holdings",
+          "route": "/api/etfs/{ticker}/holdings",
+          "description": "Get ETF holdings (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "exposure",
+          "route": "/api/etfs/{ticker}/exposure",
+          "description": "Get ETFs that hold a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "in_outflow",
+          "route": "/api/etfs/{ticker}/in-outflow",
+          "description": "Get ETF inflow/outflow data (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "start_date",
+            "end_date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "weights",
+          "route": "/api/etfs/{ticker}/weights",
+          "description": "Get sector and country weights (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_screener",
+      "premium": false,
+      "commands": [
+        {
+          "name": "stocks",
+          "route": "/api/screener/stocks",
+          "description": "Screen stocks with various filters",
+          "required": [],
+          "optional": [
+            "ticker",
+            "order",
+            "order_direction",
+            "min_marketcap",
+            "max_marketcap",
+            "min_volume",
+            "max_volume",
+            "min_oi",
+            "max_oi",
+            "min_premium",
+            "max_premium",
+            "issue_types",
+            "sectors",
+            "min_change",
+            "max_change",
+            "min_underlying_price",
+            "max_underlying_price",
+            "is_s_p_500",
+            "has_dividends",
+            "min_perc_3_day_total",
+            "max_perc_3_day_total",
+            "min_perc_3_day_call",
+            "max_perc_3_day_call",
+            "min_perc_3_day_put",
+            "max_perc_3_day_put",
+            "min_perc_30_day_total",
+            "max_perc_30_day_total",
+            "min_perc_30_day_call",
+            "max_perc_30_day_call",
+            "min_perc_30_day_put",
+            "max_perc_30_day_put",
+            "min_total_oi_change_perc",
+            "max_total_oi_change_perc",
+            "min_call_oi_change_perc",
+            "max_call_oi_change_perc",
+            "min_put_oi_change_perc",
+            "max_put_oi_change_perc",
+            "min_implied_move",
+            "max_implied_move",
+            "min_implied_move_perc",
+            "max_implied_move_perc",
+            "min_volatility",
+            "max_volatility",
+            "min_iv_rank",
+            "max_iv_rank",
+            "min_call_volume",
+            "max_call_volume",
+            "min_put_volume",
+            "max_put_volume",
+            "min_call_premium",
+            "max_call_premium",
+            "min_put_premium",
+            "max_put_premium",
+            "min_net_premium",
+            "max_net_premium",
+            "min_net_call_premium",
+            "max_net_call_premium",
+            "min_net_put_premium",
+            "max_net_put_premium",
+            "min_oi_vs_vol",
+            "max_oi_vs_vol",
+            "min_put_call_ratio",
+            "max_put_call_ratio",
+            "min_stock_volume_vs_avg30_volume",
+            "max_avg30_volume",
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "option_contracts",
+          "route": "/api/screener/option-contracts",
+          "description": "Screen option contracts with filters",
+          "required": [],
+          "optional": [
+            "limit",
+            "page",
+            "order",
+            "order_direction",
+            "is_otm",
+            "min_dte",
+            "max_dte",
+            "min_premium",
+            "max_premium",
+            "ticker_symbol",
+            "sectors",
+            "min_underlying_price",
+            "max_underlying_price",
+            "exclude_ex_div_ticker",
+            "is_new",
+            "opex_only",
+            "unusual",
+            "min_days_between_expiry_and_earnings",
+            "max_days_between_expiry_and_earnings",
+            "min_diff",
+            "max_diff",
+            "min_strike",
+            "max_strike",
+            "type",
+            "expiry_dates",
+            "min_marketcap",
+            "max_marketcap",
+            "min_volume",
+            "max_volume",
+            "min_ticker_30_d_avg_volume",
+            "max_ticker_30_d_avg_volume",
+            "min_contract_30_d_avg_volume",
+            "max_contract_30_d_avg_volume",
+            "min_multileg_volume_ratio",
+            "max_multileg_volume_ratio",
+            "min_floor_volume_ratio",
+            "max_floor_volume_ratio",
+            "min_perc_change",
+            "max_perc_change",
+            "min_daily_perc_change",
+            "max_daily_perc_change",
+            "min_avg_price",
+            "max_avg_price",
+            "min_volume_oi_ratio",
+            "max_volume_oi_ratio",
+            "min_open_interest",
+            "max_open_interest",
+            "min_floor_volume",
+            "max_floor_volume",
+            "vol_greater_oi",
+            "issue_types",
+            "min_ask_perc",
+            "max_ask_perc",
+            "min_bid_perc",
+            "max_bid_perc",
+            "min_skew_perc",
+            "max_skew_perc",
+            "min_bull_perc",
+            "max_bull_perc",
+            "min_bear_perc",
+            "max_bear_perc",
+            "min_bid_side_perc_7_day",
+            "max_bid_side_perc_7_day",
+            "min_ask_side_perc_7_day",
+            "max_ask_side_perc_7_day",
+            "min_days_of_oi_increases",
+            "max_days_of_oi_increases",
+            "min_days_of_vol_greater_than_oi",
+            "max_days_of_vol_greater_than_oi",
+            "min_iv_perc",
+            "max_iv_perc",
+            "min_delta",
+            "max_delta",
+            "min_gamma",
+            "max_gamma",
+            "min_theta",
+            "max_theta",
+            "min_vega",
+            "max_vega",
+            "min_return_on_capital_perc",
+            "max_return_on_capital_perc",
+            "min_oi_change_perc",
+            "max_oi_change_perc",
+            "min_oi_change",
+            "max_oi_change",
+            "min_volume_ticker_vol_ratio",
+            "max_volume_ticker_vol_ratio",
+            "min_sweep_volume_ratio",
+            "max_sweep_volume_ratio",
+            "min_from_low_perc",
+            "max_from_low_perc",
+            "min_from_high_perc",
+            "max_from_high_perc",
+            "min_earnings_dte",
+            "max_earnings_dte",
+            "min_transactions",
+            "max_transactions",
+            "min_close",
+            "max_close",
+            "date"
+          ],
+          "premium": false
+        },
+        {
+          "name": "analysts",
+          "route": "/api/screener/analysts",
+          "description": "Screen analyst ratings",
+          "required": [],
+          "optional": [
+            "ticker",
+            "limit",
+            "recommendation",
+            "action",
+            "newer_than",
+            "older_than"
+          ],
+          "premium": false
+        },
+        {
+          "name": "unusual_activity",
+          "route": "/api/option-activity/unusual",
+          "description": "Get option contracts flagged as unusual — the API equivalent of the live options flow \"unusual\" view (all params optional)",
+          "required": [],
+          "optional": [
+            "ticker_symbol",
+            "sectors",
+            "issue_types",
+            "unusual",
+            "min_premium",
+            "max_dte",
+            "order",
+            "order_direction",
+            "limit",
+            "date"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_shorts",
+      "premium": false,
+      "commands": [
+        {
+          "name": "data",
+          "route": "/api/shorts/{ticker}/data",
+          "description": "Get short data for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "newer_than",
+            "older_than"
+          ],
+          "premium": false
+        },
+        {
+          "name": "ftds",
+          "route": "/api/shorts/{ticker}/ftds",
+          "description": "Get failure to deliver data (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "interest_float",
+          "route": "/api/shorts/{ticker}/interest-float",
+          "description": "Get short interest as percent of float (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "volume_ratio",
+          "route": "/api/shorts/{ticker}/volume-and-ratio",
+          "description": "Get short volume and ratio (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "volumes_by_exchange",
+          "route": "/api/shorts/{ticker}/volumes-by-exchange",
+          "description": "Get short volumes by exchange (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [
+            "newer_than",
+            "older_than"
+          ],
+          "premium": false
+        },
+        {
+          "name": "interest_float_v2",
+          "route": "/api/shorts/{ticker}/interest-float/v2",
+          "description": "Get short interest as percent of float v2 with enhanced data (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "short_screener",
+          "route": "/api/short_screener",
+          "description": "Screen for stocks by short interest metrics (all params optional)",
+          "required": [],
+          "optional": [
+            "limit",
+            "offset",
+            "page",
+            "tickers",
+            "min_market_date",
+            "max_market_date",
+            "min_short_interest",
+            "max_short_interest",
+            "min_days_to_cover",
+            "max_days_to_cover",
+            "min_si_float",
+            "max_si_float",
+            "min_si_float_with_synth_long_pct_of_total_shares",
+            "max_si_float_with_synth_long_pct_of_total_shares",
+            "min_total_float",
+            "max_total_float",
+            "min_short_shares_available",
+            "max_short_shares_available",
+            "min_rebate_rate",
+            "max_rebate_rate",
+            "min_fee_rate",
+            "max_fee_rate",
+            "order_by",
+            "order_direction"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_seasonality",
+      "premium": false,
+      "commands": [
+        {
+          "name": "market",
+          "route": "/api/seasonality/market",
+          "description": "Get market-wide seasonality data",
+          "required": [],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "performers",
+          "route": "/api/seasonality/{month}/performers",
+          "description": "Get top/bottom performers for a month (month required, 1-12)",
+          "required": [
+            "month"
+          ],
+          "optional": [
+            "min_years",
+            "ticker_for_sector",
+            "s_p_500_nasdaq_only",
+            "min_oi",
+            "limit",
+            "order",
+            "order_direction"
+          ],
+          "premium": false
+        },
+        {
+          "name": "monthly",
+          "route": "/api/seasonality/{ticker}/monthly",
+          "description": "Get monthly seasonality for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "year_month",
+          "route": "/api/seasonality/{ticker}/year-month",
+          "description": "Get year-month breakdown for a ticker (ticker required)",
+          "required": [
+            "ticker"
+          ],
+          "optional": [],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_news",
+      "premium": false,
+      "commands": [
+        {
+          "name": "headlines",
+          "route": "/api/news/headlines",
+          "description": "Get news headlines with optional filters (ticker, sources, search_term, major_only, page)",
+          "required": [],
+          "optional": [
+            "ticker",
+            "limit",
+            "sources",
+            "search_term",
+            "major_only",
+            "page"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_alerts",
+      "premium": false,
+      "commands": [
+        {
+          "name": "alerts",
+          "route": "/api/alerts",
+          "description": "Get triggered alerts for the user",
+          "required": [],
+          "optional": [
+            "limit",
+            "ticker_symbols",
+            "intraday_only",
+            "config_ids",
+            "noti_types",
+            "newer_than",
+            "older_than"
+          ],
+          "premium": false
+        },
+        {
+          "name": "configurations",
+          "route": "/api/alerts/configuration",
+          "description": "Get alert configurations",
+          "required": [],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "filters",
+          "route": "/api/alerts/filters",
+          "description": "Get the filter fields and accepted values available per alert type, plus which types this account may create",
+          "required": [],
+          "optional": [],
+          "premium": false
+        },
+        {
+          "name": "query_grammar",
+          "route": "/api/alerts/query/grammar",
+          "description": "Get the alert query language grammar — targets, syntax, fields, functions, operators, scopes and examples (target optional)",
+          "required": [],
+          "optional": [
+            "target"
           ],
           "premium": false
         }
@@ -1492,695 +2589,6 @@
       ]
     },
     {
-      "tool_id": "uw_insider",
-      "premium": false,
-      "commands": [
-        {
-          "name": "transactions",
-          "route": "/api/insider/transactions",
-          "description": "Get insider transactions with filters. Use ticker_symbol for comma-separated tickers (e.g., AAPL,INTC)",
-          "required": [],
-          "optional": [
-            "ticker_symbol",
-            "limit",
-            "page",
-            "min_value",
-            "max_value",
-            "min_price",
-            "max_price",
-            "owner_name",
-            "sectors",
-            "industries",
-            "is_director",
-            "is_officer",
-            "is_ten_percent_owner",
-            "is_s_p_500",
-            "transaction_codes",
-            "min_marketcap",
-            "max_marketcap",
-            "market_cap_size",
-            "min_earnings_dte",
-            "max_earnings_dte",
-            "min_amount",
-            "max_amount",
-            "common_stock_only",
-            "security_ad_codes"
-          ],
-          "premium": false
-        },
-        {
-          "name": "sector_flow",
-          "route": "/api/insider/{sector}/sector-flow",
-          "description": "Get aggregated insider flow for a sector (sector required)",
-          "required": [
-            "sector"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "ticker_flow",
-          "route": "/api/insider/{ticker}/ticker-flow",
-          "description": "Get aggregated insider flow for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "insiders",
-          "route": "/api/insider/{ticker}",
-          "description": "Get all insiders for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_institutions",
-      "premium": false,
-      "commands": [
-        {
-          "name": "list",
-          "route": "/api/institutions",
-          "description": "List institutions with filters",
-          "required": [],
-          "optional": [
-            "name",
-            "limit",
-            "page",
-            "order",
-            "order_direction",
-            "min_total_value",
-            "max_total_value",
-            "min_share_value",
-            "max_share_value",
-            "tags"
-          ],
-          "premium": false
-        },
-        {
-          "name": "holdings",
-          "route": "/api/institution/{name}/holdings",
-          "description": "Get holdings for an institution (name required)",
-          "required": [
-            "name"
-          ],
-          "optional": [
-            "ticker_symbol",
-            "date",
-            "start_date",
-            "end_date",
-            "limit",
-            "page",
-            "order",
-            "order_direction",
-            "security_types"
-          ],
-          "premium": false
-        },
-        {
-          "name": "activity",
-          "route": "/api/institution/{name}/activity",
-          "description": "Get trading activity for an institution (name required)",
-          "required": [
-            "name"
-          ],
-          "optional": [
-            "date",
-            "limit",
-            "page",
-            "order",
-            "order_direction"
-          ],
-          "premium": false
-        },
-        {
-          "name": "activity_v2",
-          "route": "/api/institution/{name}/activity/v2",
-          "description": "Get trading activity v2 with enhanced data for an institution (name required; date, start_date, end_date optional)",
-          "required": [
-            "name"
-          ],
-          "optional": [
-            "date",
-            "start_date",
-            "end_date",
-            "limit",
-            "page",
-            "order",
-            "order_direction"
-          ],
-          "premium": false
-        },
-        {
-          "name": "sectors",
-          "route": "/api/institution/{name}/sectors",
-          "description": "Get sector exposure for an institution (name required)",
-          "required": [
-            "name"
-          ],
-          "optional": [
-            "date",
-            "limit",
-            "page"
-          ],
-          "premium": false
-        },
-        {
-          "name": "ownership",
-          "route": "/api/institution/{ticker}/ownership",
-          "description": "Get institutional ownership of a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [
-            "date",
-            "start_date",
-            "end_date",
-            "tags",
-            "limit",
-            "page",
-            "order",
-            "order_direction"
-          ],
-          "premium": false
-        },
-        {
-          "name": "latest_filings",
-          "route": "/api/institutions/latest_filings",
-          "description": "Get latest institutional filings",
-          "required": [],
-          "optional": [
-            "name",
-            "date",
-            "limit",
-            "page",
-            "order",
-            "order_direction"
-          ],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_earnings",
-      "premium": false,
-      "commands": [
-        {
-          "name": "premarket",
-          "route": "/api/earnings/premarket",
-          "description": "Get premarket earnings for a date",
-          "required": [],
-          "optional": [
-            "date",
-            "limit",
-            "page"
-          ],
-          "premium": false
-        },
-        {
-          "name": "afterhours",
-          "route": "/api/earnings/afterhours",
-          "description": "Get afterhours earnings for a date",
-          "required": [],
-          "optional": [
-            "date",
-            "limit",
-            "page"
-          ],
-          "premium": false
-        },
-        {
-          "name": "ticker",
-          "route": "/api/earnings/{ticker}",
-          "description": "Get historical earnings for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_etf",
-      "premium": false,
-      "commands": [
-        {
-          "name": "info",
-          "route": "/api/etfs/{ticker}/info",
-          "description": "Get ETF information (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "holdings",
-          "route": "/api/etfs/{ticker}/holdings",
-          "description": "Get ETF holdings (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "exposure",
-          "route": "/api/etfs/{ticker}/exposure",
-          "description": "Get ETFs that hold a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "in_outflow",
-          "route": "/api/etfs/{ticker}/in-outflow",
-          "description": "Get ETF inflow/outflow data (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "weights",
-          "route": "/api/etfs/{ticker}/weights",
-          "description": "Get sector and country weights (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_screener",
-      "premium": false,
-      "commands": [
-        {
-          "name": "stocks",
-          "route": "/api/screener/stocks",
-          "description": "Screen stocks with various filters",
-          "required": [],
-          "optional": [
-            "ticker",
-            "order",
-            "order_direction",
-            "min_marketcap",
-            "max_marketcap",
-            "min_volume",
-            "max_volume",
-            "min_oi",
-            "max_oi",
-            "min_premium",
-            "max_premium",
-            "issue_types",
-            "sectors",
-            "min_change",
-            "max_change",
-            "min_underlying_price",
-            "max_underlying_price",
-            "is_s_p_500",
-            "has_dividends",
-            "min_perc_3_day_total",
-            "max_perc_3_day_total",
-            "min_perc_3_day_call",
-            "max_perc_3_day_call",
-            "min_perc_3_day_put",
-            "max_perc_3_day_put",
-            "min_perc_30_day_total",
-            "max_perc_30_day_total",
-            "min_perc_30_day_call",
-            "max_perc_30_day_call",
-            "min_perc_30_day_put",
-            "max_perc_30_day_put",
-            "min_total_oi_change_perc",
-            "max_total_oi_change_perc",
-            "min_call_oi_change_perc",
-            "max_call_oi_change_perc",
-            "min_put_oi_change_perc",
-            "max_put_oi_change_perc",
-            "min_implied_move",
-            "max_implied_move",
-            "min_implied_move_perc",
-            "max_implied_move_perc",
-            "min_volatility",
-            "max_volatility",
-            "min_iv_rank",
-            "max_iv_rank",
-            "min_call_volume",
-            "max_call_volume",
-            "min_put_volume",
-            "max_put_volume",
-            "min_call_premium",
-            "max_call_premium",
-            "min_put_premium",
-            "max_put_premium",
-            "min_net_premium",
-            "max_net_premium",
-            "min_net_call_premium",
-            "max_net_call_premium",
-            "min_net_put_premium",
-            "max_net_put_premium",
-            "min_oi_vs_vol",
-            "max_oi_vs_vol",
-            "min_put_call_ratio",
-            "max_put_call_ratio",
-            "min_stock_volume_vs_avg30_volume",
-            "max_avg30_volume",
-            "date"
-          ],
-          "premium": false
-        },
-        {
-          "name": "option_contracts",
-          "route": "/api/screener/option-contracts",
-          "description": "Screen option contracts with filters",
-          "required": [],
-          "optional": [
-            "limit",
-            "page",
-            "order",
-            "order_direction",
-            "is_otm",
-            "min_dte",
-            "max_dte",
-            "min_premium",
-            "max_premium",
-            "ticker_symbol",
-            "sectors",
-            "min_underlying_price",
-            "max_underlying_price",
-            "exclude_ex_div_ticker",
-            "min_diff",
-            "max_diff",
-            "min_strike",
-            "max_strike",
-            "type",
-            "expiry_dates",
-            "min_marketcap",
-            "max_marketcap",
-            "min_volume",
-            "max_volume",
-            "min_ticker_30_d_avg_volume",
-            "max_ticker_30_d_avg_volume",
-            "min_contract_30_d_avg_volume",
-            "max_contract_30_d_avg_volume",
-            "min_multileg_volume_ratio",
-            "max_multileg_volume_ratio",
-            "min_floor_volume_ratio",
-            "max_floor_volume_ratio",
-            "min_perc_change",
-            "max_perc_change",
-            "min_daily_perc_change",
-            "max_daily_perc_change",
-            "min_avg_price",
-            "max_avg_price",
-            "min_volume_oi_ratio",
-            "max_volume_oi_ratio",
-            "min_open_interest",
-            "max_open_interest",
-            "min_floor_volume",
-            "max_floor_volume",
-            "vol_greater_oi",
-            "issue_types",
-            "min_ask_perc",
-            "max_ask_perc",
-            "min_bid_perc",
-            "max_bid_perc",
-            "min_skew_perc",
-            "max_skew_perc",
-            "min_bull_perc",
-            "max_bull_perc",
-            "min_bear_perc",
-            "max_bear_perc",
-            "min_bid_side_perc_7_day",
-            "max_bid_side_perc_7_day",
-            "min_ask_side_perc_7_day",
-            "max_ask_side_perc_7_day",
-            "min_days_of_oi_increases",
-            "max_days_of_oi_increases",
-            "min_days_of_vol_greater_than_oi",
-            "max_days_of_vol_greater_than_oi",
-            "min_iv_perc",
-            "max_iv_perc",
-            "min_delta",
-            "max_delta",
-            "min_gamma",
-            "max_gamma",
-            "min_theta",
-            "max_theta",
-            "min_vega",
-            "max_vega",
-            "min_return_on_capital_perc",
-            "max_return_on_capital_perc",
-            "min_oi_change_perc",
-            "max_oi_change_perc",
-            "min_oi_change",
-            "max_oi_change",
-            "min_volume_ticker_vol_ratio",
-            "max_volume_ticker_vol_ratio",
-            "min_sweep_volume_ratio",
-            "max_sweep_volume_ratio",
-            "min_from_low_perc",
-            "max_from_low_perc",
-            "min_from_high_perc",
-            "max_from_high_perc",
-            "min_earnings_dte",
-            "max_earnings_dte",
-            "min_transactions",
-            "max_transactions",
-            "min_close",
-            "max_close",
-            "date"
-          ],
-          "premium": false
-        },
-        {
-          "name": "analysts",
-          "route": "/api/screener/analysts",
-          "description": "Screen analyst ratings",
-          "required": [],
-          "optional": [
-            "ticker",
-            "limit",
-            "recommendation",
-            "action"
-          ],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_shorts",
-      "premium": false,
-      "commands": [
-        {
-          "name": "data",
-          "route": "/api/shorts/{ticker}/data",
-          "description": "Get short data for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "ftds",
-          "route": "/api/shorts/{ticker}/ftds",
-          "description": "Get failure to deliver data (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "interest_float",
-          "route": "/api/shorts/{ticker}/interest-float",
-          "description": "Get short interest as percent of float (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "volume_ratio",
-          "route": "/api/shorts/{ticker}/volume-and-ratio",
-          "description": "Get short volume and ratio (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "volumes_by_exchange",
-          "route": "/api/shorts/{ticker}/volumes-by-exchange",
-          "description": "Get short volumes by exchange (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "interest_float_v2",
-          "route": "/api/shorts/{ticker}/interest-float/v2",
-          "description": "Get short interest as percent of float v2 with enhanced data (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "short_screener",
-          "route": "/api/short_screener",
-          "description": "Screen for stocks by short interest metrics (all params optional)",
-          "required": [],
-          "optional": [
-            "limit",
-            "page",
-            "tickers",
-            "min_market_date",
-            "max_market_date",
-            "min_short_interest",
-            "max_short_interest",
-            "min_days_to_cover",
-            "max_days_to_cover",
-            "min_si_float",
-            "max_si_float",
-            "min_total_float",
-            "max_total_float",
-            "min_short_shares_available",
-            "max_short_shares_available",
-            "min_rebate_rate",
-            "max_rebate_rate",
-            "min_fee_rate",
-            "max_fee_rate",
-            "order_by",
-            "order_direction"
-          ],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_seasonality",
-      "premium": false,
-      "commands": [
-        {
-          "name": "market",
-          "route": "/api/seasonality/market",
-          "description": "Get market-wide seasonality data",
-          "required": [],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "performers",
-          "route": "/api/seasonality/{month}/performers",
-          "description": "Get top/bottom performers for a month (month required, 1-12)",
-          "required": [
-            "month"
-          ],
-          "optional": [
-            "min_years",
-            "ticker_for_sector",
-            "s_p_500_nasdaq_only",
-            "min_oi",
-            "limit",
-            "order",
-            "order_direction"
-          ],
-          "premium": false
-        },
-        {
-          "name": "monthly",
-          "route": "/api/seasonality/{ticker}/monthly",
-          "description": "Get monthly seasonality for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        },
-        {
-          "name": "year_month",
-          "route": "/api/seasonality/{ticker}/year-month",
-          "description": "Get year-month breakdown for a ticker (ticker required)",
-          "required": [
-            "ticker"
-          ],
-          "optional": [],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_news",
-      "premium": false,
-      "commands": [
-        {
-          "name": "headlines",
-          "route": "/api/news/headlines",
-          "description": "Get news headlines with optional filters (ticker, sources, search_term, major_only, page)",
-          "required": [],
-          "optional": [
-            "ticker",
-            "limit",
-            "sources",
-            "search_term",
-            "major_only",
-            "page"
-          ],
-          "premium": false
-        }
-      ]
-    },
-    {
-      "tool_id": "uw_alerts",
-      "premium": false,
-      "commands": [
-        {
-          "name": "alerts",
-          "route": "/api/alerts",
-          "description": "Get triggered alerts for the user",
-          "required": [],
-          "optional": [
-            "limit",
-            "ticker_symbols",
-            "intraday_only",
-            "config_ids",
-            "noti_types",
-            "newer_than",
-            "older_than"
-          ],
-          "premium": false
-        },
-        {
-          "name": "configurations",
-          "route": "/api/alerts/configuration",
-          "description": "Get alert configurations",
-          "required": [],
-          "optional": [],
-          "premium": false
-        }
-      ]
-    },
-    {
       "tool_id": "uw_crypto",
       "premium": false,
       "commands": [
@@ -2321,7 +2729,8 @@
           "optional": [
             "interval",
             "time_period",
-            "series_type"
+            "series_type",
+            "month"
           ],
           "premium": false
         }
@@ -2422,6 +2831,108 @@
           "premium": false
         }
       ]
+    },
+    {
+      "tool_id": "uw_potus",
+      "premium": false,
+      "commands": [
+        {
+          "name": "posts",
+          "route": "/api/potus/posts",
+          "description": "Get the President's recent posts (limit, page, search_term optional)",
+          "required": [],
+          "optional": [
+            "limit",
+            "page",
+            "search_term"
+          ],
+          "premium": false
+        },
+        {
+          "name": "schedule",
+          "route": "/api/potus/schedule",
+          "description": "Get the President's public schedule (date, limit, page optional)",
+          "required": [],
+          "optional": [
+            "date",
+            "limit",
+            "page"
+          ],
+          "premium": false
+        }
+      ]
+    },
+    {
+      "tool_id": "uw_futures",
+      "premium": true,
+      "commands": [
+        {
+          "name": "contracts",
+          "route": "/api/futures/contracts",
+          "description": "List active CME contracts with recent trading activity (days optional)",
+          "required": [],
+          "optional": [
+            "days"
+          ],
+          "premium": false
+        },
+        {
+          "name": "flow",
+          "route": "/api/futures/flow",
+          "description": "Newest-first trade prints across ALL contracts (limit, older_than, newer_than, products, side, min_size, max_size, min_price, max_price, include_spreads optional)",
+          "required": [],
+          "optional": [
+            "limit",
+            "older_than",
+            "newer_than",
+            "products",
+            "side",
+            "min_size",
+            "max_size",
+            "min_price",
+            "max_price",
+            "include_spreads"
+          ],
+          "premium": false
+        },
+        {
+          "name": "trades",
+          "route": "/api/futures/{contract}/trades",
+          "description": "Newest-first trade prints for one contract (contract required; limit, older_than, newer_than optional)",
+          "required": [
+            "contract"
+          ],
+          "optional": [
+            "limit",
+            "older_than",
+            "newer_than"
+          ],
+          "premium": false
+        },
+        {
+          "name": "candles",
+          "route": "/api/futures/{contract}/candles",
+          "description": "OHLCV candles for one contract (contract required; interval, range optional)",
+          "required": [
+            "contract"
+          ],
+          "optional": [
+            "interval",
+            "range"
+          ],
+          "premium": false
+        },
+        {
+          "name": "stats",
+          "route": "/api/futures/{contract}/stats",
+          "description": "Latest session stats — settlement, settlement date, open interest, volume (contract required)",
+          "required": [
+            "contract"
+          ],
+          "optional": [],
+          "premium": false
+        }
+      ]
     }
   ],
   "standalone_endpoints": [
@@ -2504,7 +3015,8 @@
       "optional": [
         "interval",
         "time_period",
-        "series_type"
+        "series_type",
+        "month"
       ],
       "premium": false
     }

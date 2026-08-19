@@ -2,7 +2,7 @@ name: Test
 
 on:
   push:
-    branches: [main]
+    branches: [master, main]
   pull_request:
 
 jobs:
@@ -22,3 +22,26 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm test
+
+      # The generated schema under docs/ is checked in, so it must match the
+      # catalog it was generated from.
+      - run: npm run docs:check
+
+  api-sync:
+    # Advisory: the upstream API can add endpoints at any time, and that should
+    # surface as a warning rather than a red build on unrelated PRs.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+      - run: npm run fetch-spec
+      - run: npm run check-api
